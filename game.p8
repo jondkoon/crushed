@@ -872,7 +872,7 @@ local title = {
 	height = 4,
 	init = function(self)
 		self.text = "crushed"
-		self.width = (#self.text + 2) * 4
+		self.width = (#self.text) * 4
 		self.x = (screen_width - self.width) / 2
 	end,
 	draw = function(self)
@@ -886,7 +886,7 @@ make_start_prompt = function(y,text)
 		height = 4,
 		init = function(self)
 			self.text = text or "press ❎ or 🅾️ to start"
-			self.width = (#self.text + 2) * 4
+			self.width = (#self.text) * 4 + 4
 			self.x = (screen_width - self.width) / 2
 			self.timer = 60
 		end,
