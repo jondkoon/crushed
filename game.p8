@@ -132,11 +132,21 @@ cam = {
 	end
 }
 
+function merge_tables(a, b)
+	for k,v in pairs(b) do
+		a[k] = v
+	end
+	return a
+end
+
 function make_scene(options)
-	return {
-		height = options.height,
-		width = options.width,
-		music = options.music,
+	local o = {
+		init = options.init,
+		update = options.update,
+		draw = options.draw
+	}
+
+	local scene = {
 		init = function(self)
 			cam:set_scene(self)
 			self.objects = {}
@@ -145,10 +155,7 @@ function make_scene(options)
 			else
 				music(-1)
 			end
-			options.init(self)
-		end,
-		get_ground = function(self, player)
-			return self.height
+			o.init(self)
 		end,
 		add = function(self, object)
 			if (object.init) then
@@ -166,21 +173,22 @@ function make_scene(options)
 				end
 			end
 			cam:update()
-			if (options.update) then
-				options.update(self)
+			if (o.update) then
+				o.update(self)
 			end
 		end,
 		draw = function(self)
 			cls(0)
 			cam:set()
-			if (options.draw) then
-				options.draw(self)
+			if (o.draw) then
+				o.draw(self)
 			end
 			for object in all(self.objects) do
 				object:draw()
 			end
 		end
 	}
+	return merge_tables(options, scene)
 end
 
 function change_scene(scene)
@@ -294,12 +302,45 @@ function make_player(scene)
 	}
 end
 
+tile_size = 8
+function make_block(tile_id, x, y)
+	return {
+		x = x,
+		y = y,
+		width = tile_size,
+		height = tile_size,
+		draw = function(self)
+			spr(tile_id, x, y)
+		end
+	}
+end
+
 game_scene = make_scene({
-	height = screen_height * 5,
+	height = screen_height * 4,
 	width = screen_width,
+	get_ground = function(self, player)
+		return self.height
+	end,
 	init = function(self)
+		local level_width = screen_width
+		local level_height = screen_height * 4
+		
 		local player = make_player(self)
-		player.y = self.height - player.height
+		for x = 0, level_width, tile_size do
+			for y = 0, level_height, tile_size do
+				local tile_id = mget(x / tile_size,y / tile_size)
+				if (tile_id == 49) then
+					local block = make_block(tile_id, x, y)
+					self:add(block)
+				end
+				if (tile_id == 16) then
+					player.x = x
+					player.y = y
+					player.dy = 1 -- falling
+				end
+			end
+		end
+
 		cam:follow(player, 20)
 		self:add(player)
 	end,
