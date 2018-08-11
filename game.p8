@@ -339,22 +339,6 @@ function make_player(scene)
 	}
 end
 
-tile_size = 8
-function make_block(tile_id, x, y)
-	return {
-		x = x,
-		y = y,
-		width = tile_size,
-		height = tile_size,
-		update = function(self)
-			self.y -= 0.5
-		end,
-		draw = function(self)
-			spr(tile_id, self.x, self.y)
-		end
-	}
-end
-
 function make_explosion(scene, x, y)
 	cam:shake()
 	local make_particle = function(x, y)
@@ -462,24 +446,14 @@ function make_platform(x, y, w, h, directions)
 			end
 		end,
 		draw = function(self)
-			-- bounding box
-			-- rect(self.x, self.y, self.x + self.width - 1, self.y + self.height - 1, 7)
-
-			-- center area
 			local center_x0 = self.x+self.corner_size
 			local center_y0 = self.y+self.corner_size
 			local center_x1 = center_x0 + self.width - (self.corner_size * 2)
 			local center_y1 = center_y0 + self.height - (self.corner_size * 2)
 			rectfill(center_x0, center_y0, center_x1, center_y1, 11)
 
-			-- slivers
 			self:draw_slivers()
-
-			-- corners
 			self:draw_corners()
-
-			-- debug
-			-- print(self.should_grow, 100, 100)
 		end,
 		draw_slivers = function(self)
 			local draw_order = {'bottom', 'left', 'top', 'right'}
@@ -616,6 +590,21 @@ function make_platform(x, y, w, h, directions)
 	}
 end
 
+tile_size = 8
+function make_block(tile_id, x, y)
+	return {
+		x = x,
+		y = y,
+		width = tile_size,
+		height = tile_size,
+		update = function(self)
+		end,
+		draw = function(self)
+			spr(tile_id, self.x, self.y)
+		end
+	}
+end
+
 game_scene = make_scene({
 	height = screen_height * 4,
 	width = screen_width,
@@ -657,8 +646,14 @@ game_scene = make_scene({
 					self:add(block)
 					add(self.blocks, block)
 				end
+
+				if (tile_id == 37) then
+					local platform = make_platform(x,y,8,8,{ up = true, down = true })
+					self:add(platform)
+					add(self.blocks, platform)
+				end
 				if (tile_id == 16) then
-					player.x = x
+					player.x = x + 40
 					player.y = y
 					player.dy = 1 -- falling
 				end
@@ -882,9 +877,9 @@ __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-13130000000000131300000000001313000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+13130000000000000000000000001313000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-13130000000000000000035203001313000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+13130000000000000000525252001313000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 13130000010000000000000000001313000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
