@@ -18,7 +18,7 @@ make_platform = function(x, y, w, h, directions)
 		sliver_height = 6,
 		counter = 1,
 		grow_delta = 2,
-		should_grow = true,
+		should_grow = false,
 		grow_speed = 3,
 		available_slivers = {
 			top = {
@@ -233,21 +233,21 @@ make_platform = function(x, y, w, h, directions)
 		end
 	}
 
-	add(platforms, platform)
+	return platform
 end
 
 function _init()
-	make_platform(6, 64, 16, 40, {up=true,down=false,left=true,right=false})
-	make_platform(64, 20, 16, 8, {up=true,down=true,left=true,right=true})
-	make_platform(100, 64, 8, 8, {up=false,down=false,left=true,right=false})
-	make_platform(112, 64, 8, 8, {up=false,down=true,left=false,right=false})
+	add(platforms, make_platform(6, 64, 16, 40, {up=true,down=false,left=true,right=false}))
+	add(platforms, make_platform(64, 20, 16, 8, {up=true,down=true,left=true,right=true}))
+	add(platforms, make_platform(100, 64, 8, 8, {up=false,down=false,left=true,right=false}))
+	add(platforms, make_platform(112, 64, 8, 8, {up=false,down=true,left=false,right=false}))
 
 	for platform in all(platforms) do
 		platform:init()
 	end
 end
 
-global_grow_toggle = true
+global_grow_toggle = false
 function _update60()
 	if (btnp(5)) then
 		global_grow_toggle = not global_grow_toggle
