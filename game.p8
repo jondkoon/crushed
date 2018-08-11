@@ -200,7 +200,9 @@ function make_scene(options)
 				o.draw(self)
 			end
 			for object in all(self.objects) do
-				object:draw()
+				if (object.draw) then
+					object:draw()
+				end
 			end
 		end
 	}
@@ -596,14 +598,7 @@ function make_block(tile_id, x, y)
 		x = x,
 		y = y,
 		width = tile_size,
-		height = tile_size,
-		update = function(self)
-		end,
-		draw = function(self)
-			palt(0, false)
-			spr(tile_id, self.x, self.y)
-			palt(0, true)
-		end
+		height = tile_size
 	}
 end
 
@@ -726,7 +721,7 @@ game_scene = make_scene({
 					self:add(block)
 					add(self.blocks, block)
 				elseif (tile_id == 16) then
-					self.player.x = x + 40
+					self.player.x = x
 					self.player.y = y
 					self.player.dy = 1 -- falling
 				else
@@ -749,23 +744,29 @@ game_scene = make_scene({
 		self:check_to_grow()
 	end,
 	draw = function(self)
-		local size = 16
-		for y = 0, self.height / size do
-			for x = 0, self.width / size do
-				local x_odd = x % 2 == 0
-				local y_odd = y % 2 == 0
-				local color = x_odd and 5 or 6
-				if (y_odd) then
-					color = x_odd and 6 or 5
-				end
-				local start_x = x * size
-				local start_y = y * size
-				rectfill(start_x, start_y, start_x + size, start_y + size, color)
-				print(start_y, start_x, start_y, 10)
-			end
-		end
+		palt(0, false)
+		map(0, 0, 0, 0, screen_width / 8, screen_height * 4 / 8)
+		palt(0, true)
 	end,
 })
+
+function checker_board(scene)
+	local size = 16
+	for y = 0, scene.height / size do
+		for x = 0, scene.width / size do
+			local x_odd = x % 2 == 0
+			local y_odd = y % 2 == 0
+			local color = x_odd and 5 or 6
+			if (y_odd) then
+				color = x_odd and 6 or 5
+			end
+			local start_x = x * size
+			local start_y = y * size
+			rectfill(start_x, start_y, start_x + size, start_y + size, color)
+			print(start_y, start_x, start_y, 10)
+		end
+	end
+end
 
 local title = {
 	y = 40,
