@@ -219,7 +219,7 @@ function make_player(scene)
 		jumping_left_sprite = 22,
 		update = function(self)
 			self.squating = btn(3, self.player)
-			if (btn(0, self.player)) then 
+			if (btn(0, self.player)) then
 				if (self.dx > -min_speed) then
 					self.dx = -min_speed
 				elseif (self.dx > -max_speed) then
@@ -334,6 +334,39 @@ function make_block(tile_id, x, y)
 			spr(tile_id, x, y)
 		end
 	}
+end
+
+function make_explosion(scene, x, y)
+	cam:shake()
+	local make_particle = function(x, y)
+		local particle_colors = { 6, 7, 9, 10 }
+		local particle = {
+			x = x - 4 + flr(rnd(8)),
+			y = y - 4 + flr(rnd(8)),
+			width = 5 + flr(rnd(8)),
+			color = random_one(particle_colors),
+			counter = 10 + flr(rnd(10)),
+			dx = flr(rnd(3)) - 1.5,
+			dy = flr(rnd(3)) - 1.5,
+			dwidth = flr(rnd(3)) - 1.5,
+			update = function(self)
+				self.x += self.dx
+				self.y += self.dy
+				self.width += self.dwidth
+				self.counter -= 1
+				if (self.counter <= 0) then
+					scene:remove(self)
+				end
+			end,
+			draw = function(self)
+				circfill(self.x, self.y, self.width / 2, self.color)
+			end
+		}
+		scene:add(particle)
+	end
+	for i = 0, 10 do
+		make_particle(x, y)
+	end
 end
 
 game_scene = make_scene({
