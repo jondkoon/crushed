@@ -211,93 +211,93 @@ end
 min_speed=0.8
 max_speed=1.5
 acceleration=1.05
-with_movement = function(t)
-	t.squating = btn(3, t.player)
-	if (btn(0, t.player)) then 
-		if (t.dx > -min_speed) then
-			t.dx = -min_speed
-		elseif (t.dx > -max_speed) then
-			t.dx *= acceleration
-		end
-	elseif (btn(1, t.player)) then
-		if (t.dx < min_speed) then
-			t.dx = min_speed
-		elseif (t.dx < max_speed) then
-			t.dx *= acceleration
-		end
-	-- if velocity is above threshold but no button is being pushed decelerate
-	elseif (abs(t.dx) > 0.2) then
-		t.dx *= 0.75
-	else
-		t.dx = 0
-	end
-
-	local bottom_y = t.y + t.height
-
-	-- jumping
-	if (btn(2, t.player)) then
-		if (bottom_y == ground_y) then
-			t.dy = -0.8
-		-- the longer you push jump the higher you will go
-		elseif (t.dy < 0 and t.dy > -1.3) then
-			t.dy *= 1.15
-		end
-	end
-
-	calculate_position(t)
-
-	if (t.x < -2) then
-		t.x = -2
-	elseif (t.x > screen_width) then
-		t.x = screen_width
-	end
-
-	-- in the air
-	if (bottom_y < ground_y) then
-		if (t.dx > 0) then
-			t.sprite = t.jumping_right_sprite		
-		elseif (t.dx < 0) then
-			t.sprite = t.jumping_left_sprite		
+function make_player(scene)
+	local player = {}
+	player.player = 0
+	player.x = 40
+	player.y = 120
+	player.width = 8
+	player.height = 8
+	player.dy = 0
+	player.dx = 0
+	player.default_sprite = 16
+	player.squating_sprite = 17
+	player.jumping_sprite = 18
+	player.moving_right_sprite = 19
+	player.moving_left_sprite = 20
+	player.jumping_right_sprite = 21
+	player.jumping_left_sprite = 22
+	player.update = function(self)
+		self.squating = btn(3, self.player)
+		if (btn(0, self.player)) then 
+			if (self.dx > -min_speed) then
+				self.dx = -min_speed
+			elseif (self.dx > -max_speed) then
+				self.dx *= acceleration
+			end
+		elseif (btn(1, self.player)) then
+			if (self.dx < min_speed) then
+				self.dx = min_speed
+			elseif (self.dx < max_speed) then
+				self.dx *= acceleration
+			end
+		-- if velocity is above threshold but no button is being pushed decelerate
+		elseif (abs(self.dx) > 0.2) then
+			self.dx *= 0.75
 		else
-			t.sprite = t.jumping_sprite
-		end	
-	elseif (t.squating) then
-		t.sprite = t.squating_sprite
-	elseif (t.dx > 0) then
-		t.sprite = t.moving_right_sprite		
-	elseif (t.dx < 0) then
-		t.sprite = t.moving_left_sprite		
-	else
-		t.sprite = t.default_sprite
-	end
-end
+			self.dx = 0
+		end
 
-player = {}
-player.player = 0
-player.x = 40
-player.y = 120
-player.width = 8
-player.height = 8
-player.dy = 0
-player.dx = 0
-player.default_sprite = 16
-player.squating_sprite = 17
-player.jumping_sprite = 18
-player.moving_right_sprite = 19
-player.moving_left_sprite = 20
-player.jumping_right_sprite = 21
-player.jumping_left_sprite = 22
-player.update = function(self)
-	with_movement(self)
-end
-player.draw = function(self)
-	spr(self.sprite, self.x, self.y)
+		local bottom_y = self.y + self.height
+
+		-- jumping
+		if (btn(2, self.player)) then
+			if (bottom_y == ground_y) then
+				self.dy = -0.8
+			-- the longer you push jump the higher you will go
+			elseif (self.dy < 0 and self.dy > -1.3) then
+				self.dy *= 1.15
+			end
+		end
+
+		calculate_position(self)
+
+		if (self.x < -2) then
+			self.x = -2
+		elseif (self.x > screen_width) then
+			self.x = screen_width
+		end
+
+		-- in the air
+		if (bottom_y < ground_y) then
+			if (self.dx > 0) then
+				self.sprite = self.jumping_right_sprite		
+			elseif (self.dx < 0) then
+				self.sprite = self.jumping_left_sprite		
+			else
+				self.sprite = self.jumping_sprite
+			end	
+		elseif (self.squating) then
+			self.sprite = self.squating_sprite
+		elseif (self.dx > 0) then
+			self.sprite = self.moving_right_sprite		
+		elseif (self.dx < 0) then
+			self.sprite = self.moving_left_sprite		
+		else
+			self.sprite = self.default_sprite
+		end
+	end
+	player.draw = function(self)
+		spr(self.sprite, self.x, self.y)
+	end
+	return player
 end
 
 game_scene = make_scene({
 	height = screen_height + half_screen_height,
 	width = screen_width * 10,
 	init = function(self)
+		local player = make_player(self)
 		self:add(player)
 	end,
 	update = function(self)
