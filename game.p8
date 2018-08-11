@@ -321,7 +321,7 @@ function make_player(scene)
 			local ground_y = scene:get_ground(self)
 
 			-- jumping
-			if (btn(2, self.player)) then
+			if (btn(4, self.player)) then
 				if (self.y + self.height == ground_y) then
 					sfx(2)
 					self.dy = -0.8
