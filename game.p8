@@ -114,7 +114,7 @@ cam = {
 			end
 		end
 
-		desired_y = self.following.y + self.following.height - screen_height
+		desired_y = self.scene:get_ground(self.following)
 		self.y = desired_y
 	end,
 	update = function(self)
