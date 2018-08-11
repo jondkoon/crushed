@@ -206,9 +206,10 @@ function make_player(scene)
 		x = 40,
 		y = 120,
 		width = 3,
-		height = 7,
+		height = 6,
 		dy = 0,
 		dx = 0,
+		dt = 0,
 		default_sprite = 16,
 		squating_sprite = 17,
 		jumping_sprite = 18,
@@ -249,22 +250,47 @@ function make_player(scene)
 				end
 			end
 
-			if (not self.dt) then
-				self.dt = 0 -- delta time
-			end
-
+			-- in the air
 			if (self.dy != 0 or self.y + self.height < ground_y) then
 				self.dt += 1
 				self.dy += gravity * (self.dt/frame_rate)
 			end
 
-			self.y = flr(min(ground_y - self.height, self.y + self.dy))
-			self.x += self.dx
-			
+			local collision_x = scene:check_block_collision({
+				x = self.x + self.dx,
+				y = self.y,
+				width = self.width,
+				height = self.height
+			})
+
+			if (collision_x) then
+				self.dx = 0
+			else
+				self.x += self.dx
+			end
+
+			if (self.dy < 0) then
+				local desired_y = flr(self.y + self.dy)
+				local collision_y = scene:check_block_collision({
+					x = self.x,
+					y = desired_y,
+					width = self.width,
+					height = self.height
+				})
+				if (not collision_y) then
+					self.y = desired_y
+				else
+					-- quick bounce back when you hit your head
+					self.dy = 0.1
+				end
+			else
+				self.y = flr(min(ground_y - self.height, self.y + self.dy))
+			end
+
 			if (self.y + self.height == ground_y) then
 				self.dy = 0
 				self.dt = 0
-			end
+			end			
 
 			if (self.x < 0) then
 				self.x = 0
@@ -292,7 +318,7 @@ function make_player(scene)
 			end
 		end,
 		draw = function(self)
-			spr(self.sprite, self.x - 3, self.y)
+			spr(self.sprite, self.x - 3, self.y - 2)
 		end
 	}
 end
@@ -316,9 +342,14 @@ game_scene = make_scene({
 	get_ground = function(self, player)
 		local ground
 		for block in all(self.blocks) do
-			if (not ground and test_collision(block, {
-				x = player.x,
+			if (not ground and test_collision({
+				x = block.x,
 				y = block.y,
+				width = block.width,
+				height = 2
+				}, {
+				x = player.x,
+				y = player.y + 2,
 				width = player.width,
 				height = player.height
 			})) then
@@ -331,7 +362,7 @@ game_scene = make_scene({
 		for block in all(self.blocks) do
 			if (test_collision(block, player)) then
 				return true
-			end
+			end		
 		end
 	end,
 	init = function(self)
@@ -572,7 +603,7 @@ __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-13130000000000000000000000001313000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+13130000000000131300000000001313000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 13130000000000000000035203001313000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
