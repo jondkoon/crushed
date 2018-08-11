@@ -18,12 +18,23 @@ platform = {
 	grow_delta = 2,
 	grown_x = 0,
 	grown_y = 0,
-	available_slivers = {
+	available_x_slivers = {
+		{26, 0}, -- plain
+		{26, 0}, -- plain
 		{26, 0}, -- plain
 		{40, 0}, -- spotted
 		{42, 0},
 		{44, 0},
 		{46, 0}
+	},
+	available_y_slivers = {
+		{64, 6}, -- plain
+		{64, 6}, -- plain
+		{64, 6}, -- plain
+		{56, 0}, -- spotted
+		{56, 2},
+		{56, 4},
+		{56, 6}
 	},
 	slivers = {
 		top = {},
@@ -39,7 +50,7 @@ platform = {
 	end,
 	draw = function(self)
 		-- bounding box
-		rect(self.x, self.y, self.x + self.width - 1, self.y + self.height - 1)
+		-- rect(self.x, self.y, self.x + self.width - 1, self.y + self.height - 1, 7)
 
 		-- corners
 		-- top left
@@ -58,14 +69,29 @@ platform = {
 			end
 		end
 
+		-- center area
+		local center_x0 = self.x+self.corner_sprite_size
+		local center_y0 = self.y+self.corner_sprite_size
+		local center_x1 = center_x0 + self.width - (self.corner_sprite_size * 2)
+		local center_y1 = center_y0 + self.height - (self.corner_sprite_size * 2)
+		rectfill(center_x0, center_y0, center_x1, center_y1, 11)
+
 		print(self.grown_x, 6, 6)
 	end,
-	get_random_sliver = function(self)
-		local random_sliver_index = flr(rnd(#self.available_slivers)) + 1
-		return self.available_slivers[random_sliver_index]
+	get_random_x_sliver = function(self)
+		local random_sliver_index = flr(rnd(#self.available_x_slivers)) + 1
+		return self.available_x_slivers[random_sliver_index]
 	end,
-	make_sliver = function(self, collection)
-		add(collection, self:get_random_sliver())
+	get_random_y_sliver = function(self)
+		local random_sliver_index = flr(rnd(#self.available_y_slivers)) + 1
+		return self.available_y_slivers[random_sliver_index]
+	end,
+	make_sliver = function(self, key)
+		if (key == "top" or key == "bottom") then
+			add(self.slivers[key], self:get_random_x_sliver())
+		elseif (key == "right" or key == "left") then
+			add(self.slivers[key], self:get_random_y_sliver())
+		end
 	end,
 	draw_sliver = function(self, key, i, sliver)
 		local spr_x = sliver[1]
@@ -83,8 +109,15 @@ platform = {
 		end
 
 		if (key == "left") then
-			local x = self:get_sliver_x_pos(i)
-			sspr(spr_x, spr_y, 2, 8, x, self.y, 2, 8)
+			local x = self.x
+			local y = self.y + self.corner_sprite_size + (self.grow_delta * (i - 1))
+			sspr(spr_x, spr_y, 8, 2, x, y, 8, 2)
+		end
+
+		if (key == "right") then
+			local x = self.x + self.width - 8
+			local y = self.y + self.corner_sprite_size + (self.grow_delta * (i - 1))
+			sspr(spr_x, spr_y, 8, 2, x, y, 8, 2, true, false)
 		end
 	end,
 	get_sliver_x_pos = function(self, i)
@@ -101,10 +134,10 @@ platform = {
 		self.grown_x += 1
 		self.grown_y += 1
 
-		self:make_sliver(self.slivers.top)
-		self:make_sliver(self.slivers.right)
-		self:make_sliver(self.slivers.bottom)
-		self:make_sliver(self.slivers.left)
+		self:make_sliver("top")
+		self:make_sliver("right")
+		self:make_sliver("bottom")
+		self:make_sliver("left")
 	end
 }
 
@@ -117,11 +150,11 @@ function _draw()
 	platform:draw()
 end
 __gfx__
-00000000000003333333333300333333000333333333333333333333000000000000000000000000000000000000000000000000000000000000000000000000
-0000000000003bbbbbbbbbbb03bbbbbb003bbbbbbbbbbbbbbbbbbbbb000000000000000000000000000000000000000000000000000000000000000000000000
-007007000003bbbbbb7bbbbb3bbbbbbb03bbbbbbb6bbbbb6b7bbbbbb000000000000000000000000000000000000000000000000000000000000000000000000
-00077000003bbbbbbbbbbb7b3bbbbbbb3bbbbbbbbbbbb6bbbbbbb7bb000000000000000000000000000000000000000000000000000000000000000000000000
-0007700003bbbbbbbb7bbbbb3bbbbbbb3bbbbbbbb6bbbbbbb7bbbbbb000000000000000000000000000000000000000000000000000000000000000000000000
-007007003bbbbbbbbb7bbb7b3bbbbbbb3bbbbbbbbbb6bbbbb7bbb7bb000000000000000000000000000000000000000000000000000000000000000000000000
-000000003bbbbbbbbbbbbb7b3bbbbbbb3bbbbbbbbbbbbbb6bbbbb7bb000000000000000000000000000000000000000000000000000000000000000000000000
-000000003bbbbbbbbbbbbbbb3bbbbbbb3bbbbbbbb6bbbbbbbbbbbbbb000000000000000000000000000000000000000000000000000000000000000000000000
+000000000000033333333333003333330003333333333333333333333bbbbbbb3bbbbbbb00000000000000000000000000000000000000000000000000000000
+0000000000003bbbbbbbbbbb03bbbbbb003bbbbbbbbbbbbbbbbbbbbb3b6b6bb63bbbbbbb00000000000000000000000000000000000000000000000000000000
+007007000003bbbbbb7bbbbb3bbbbbbb03bbbbbbb6bbbbb6b7bbbbbb3bbbbbbb3bbbbbbb00000000000000000000000000000000000000000000000000000000
+00077000003bbbbbbbbbbb7b3bbbbbbb3bbbbbbbbbbbb6bbbbbbb7bb3bbbb6bb3bbbbbbb00000000000000000000000000000000000000000000000000000000
+0007700003bbbbbbbb7bbbbb3bbbbbbb3bbbbbbbb6bbbbbbb7bbbbbb3bbbbbbb3bbbbbbb00000000000000000000000000000000000000000000000000000000
+007007003bbbbbbbbb7bbb7b3bbbbbbb3bbbbbbbbbb6bbbbb7bbb7bb3bb6bbbb3bbbbbbb00000000000000000000000000000000000000000000000000000000
+000000003bbbbbbbbbbbbb7b3bbbbbbb3bbbbbbbbbbbbbb6bbbbb7bb3bbbbbbb3bbbbbbb00000000000000000000000000000000000000000000000000000000
+000000003bbbbbbbbbbbbbbb3bbbbbbb3bbbbbbbb6bbbbbbbbbbbbbb3b6bbb6b3bbbbbbb00000000000000000000000000000000000000000000000000000000
