@@ -16,7 +16,7 @@ behaviors = {
 }
 
 platforms = {}
-make_platform = function(x, y, w, h, appearance, behavior)
+make_platform = function(x, y, w, h, appearance, directions)
 	platform = {
 		x = x,
 		y = y,
@@ -28,7 +28,7 @@ make_platform = function(x, y, w, h, appearance, behavior)
 		sprite_height = 8,
 		counter = 1,
 		grow_delta = 2,
-		behavior = behavior,
+		directions = directions,
 		available_x_slivers = {
 			{26, 0}, -- plain
 			{26, 0}, -- plain
@@ -72,7 +72,7 @@ make_platform = function(x, y, w, h, appearance, behavior)
 		end,
 		update = function(self)
 			self.counter += 1
-			if self.counter % 3 == 0 then
+			if self.counter % 2 == 0 then
 				self:grow()
 			end
 		end,
@@ -103,8 +103,6 @@ make_platform = function(x, y, w, h, appearance, behavior)
 			local center_x1 = center_x0 + self.width - (self.corner_sprite_size * 2)
 			local center_y1 = center_y0 + self.height - (self.corner_sprite_size * 2)
 			rectfill(center_x0, center_y0, center_x1, center_y1, 11)
-
-			print(self.behavior, 6, 12, 7)
 		end,
 		get_random_x_sliver = function(self)
 			local random_sliver_index = flr(rnd(#self.available_x_slivers)) + 1
@@ -155,50 +153,35 @@ make_platform = function(x, y, w, h, appearance, behavior)
 			return self.y + self.height - 8
 		end,
 		grow = function(self)
-			if (self.behavior == behaviors.up) then
+			local grow_up = self.directions.up
+			local grow_down = self.directions.down
+			local grow_left = self.directions.left
+			local grow_right = self.directions.right
+
+			-- up and down directions
+			if (grow_up or grow_down) then
+				self.height += self.grow_delta
+
+				self:make_sliver("left")
+				self:make_sliver("right")
+			end
+			if (grow_up and grow_down) then
+				self.y -= self.grow_delta / 2
+			elseif (grow_up) then
 				self.y -= self.grow_delta
-				self.height += self.grow_delta
+			end
 
-				self:make_sliver("right")
-				self:make_sliver("left")
-			elseif (self.behavior == behaviors.down) then
-				self.height += self.grow_delta
-
-				self:make_sliver("right")
-				self:make_sliver("left")
-			elseif (self.behavior == behaviors.right) then
+			-- left and right directions
+			if (grow_left or grow_right) then
 				self.width += self.grow_delta
 
 				self:make_sliver("top")
 				self:make_sliver("bottom")
-			elseif (self.behavior == behaviors.left) then
+			end
+			if (grow_left and grow_right) then
+				self.x -= self.grow_delta / 2
+			elseif (grow_left) then
 				self.x -= self.grow_delta
-				self.width += self.grow_delta
-
-				self:make_sliver("top")
-				self:make_sliver("bottom")
-			elseif (self.behavior == behaviors.expand) then
-				self.x -= self.grow_delta / 2
-				self.width += self.grow_delta
-				self.y -= self.grow_delta / 2
-				self.height += self.grow_delta
-
-				self:make_sliver("top")
-				self:make_sliver("right")
-				self:make_sliver("bottom")
-				self:make_sliver("left")
-			elseif (self.behavior == behaviors.hor_stretch) then
-				self.x -= self.grow_delta / 2
-				self.width += self.grow_delta
-
-				self:make_sliver("top")
-				self:make_sliver("bottom")
-			elseif (self.behavior == behaviors.vert_stretch) then
-				self.y -= self.grow_delta / 2
-				self.height += self.grow_delta
-
-				self:make_sliver("right")
-				self:make_sliver("left")
 			end
 		end
 	}
@@ -207,9 +190,9 @@ make_platform = function(x, y, w, h, appearance, behavior)
 end
 
 function _init()
-	make_platform(64, 64, 16, 40, nil, behaviors.vert_stretch)
-	make_platform(64, 20, 16, 16, nil, behaviors.expand)
-	make_platform(40, 64, 16, 16, nil, behaviors.left)
+	make_platform(64, 64, 16, 40, nil, {up=true,down=false,left=true,right=false})
+	make_platform(64, 20, 16, 16, nil, {up=true,down=true,left=true,right=true})
+	make_platform(40, 64, 16, 16, nil, {up=false,down=false,left=true,right=false})
 
 	for platform in all(platforms) do
 		platform:init()
