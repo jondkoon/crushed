@@ -46,9 +46,17 @@ function random_one(set)
 	return set[1 + flr(rnd(count(set)))]
 end
 
+function merge_tables(a, b)
+	for k,v in pairs(b) do
+		a[k] = v
+	end
+	return a
+end
+
 cam = {
 	x = 0,
 	y = 0,
+	desired_y = 0,
 	dx = 0,
 	dy = 0,
 	max_x = screen_width,
@@ -114,8 +122,23 @@ cam = {
 			end
 		end
 
-		desired_y = self.scene:get_ground(self.following)
-		self.y = desired_y
+		if (self.following.dy == 0) then
+			 self.desired_y = self.following.y - half_screen_height
+		end
+
+		local diff = self.y - self.desired_y
+
+		if (abs(diff) <= 3) then
+			self.y = self.desired_y
+			self.desired_y = self.y
+		else
+			self.dy = min(self.dy + 1, abs(self.following.dy) + 2)
+			if (diff < 0) then
+				self.y += self.dy
+			else
+				self.y -= self.dy
+			end
+		end
 	end,
 	update = function(self)
 		self:update_shake()
@@ -131,13 +154,6 @@ cam = {
 		camera(self.x + self.shake_x, self.y + self.shake_y)
 	end
 }
-
-function merge_tables(a, b)
-	for k,v in pairs(b) do
-		a[k] = v
-	end
-	return a
-end
 
 function make_scene(options)
 	local o = {
@@ -330,8 +346,11 @@ function make_block(tile_id, x, y)
 		y = y,
 		width = tile_size,
 		height = tile_size,
+		update = function(self)
+			self.y -= 0.5
+		end,
 		draw = function(self)
-			spr(tile_id, x, y)
+			spr(tile_id, self.x, self.y)
 		end
 	}
 end
@@ -375,12 +394,7 @@ game_scene = make_scene({
 	get_ground = function(self, player)
 		local ground
 		for block in all(self.blocks) do
-			if (not ground and test_collision({
-				x = block.x,
-				y = block.y,
-				width = block.width,
-				height = 2
-				}, {
+			if (not ground and test_collision(block, {
 				x = player.x,
 				y = player.y + 2,
 				width = player.width,
@@ -397,6 +411,9 @@ game_scene = make_scene({
 				return true
 			end		
 		end
+	end,
+	check_for_death = function(self, player)
+
 	end,
 	init = function(self)
 		self.blocks = {}
@@ -419,6 +436,8 @@ game_scene = make_scene({
 				end
 			end
 		end
+
+		cam.y = self.height - screen_height
 
 		cam:follow(player, 20)
 		self:add(player)
