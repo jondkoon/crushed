@@ -4,10 +4,9 @@ __lua__
 
 screen_width = 128
 half_screen_width = screen_width / 2
-
 screen_height = 128
 half_screen_height = screen_height / 2
-
+frame_rate = 60
 sound_on = true
 stop = false
 _sfx = sfx
@@ -115,7 +114,7 @@ cam = {
 			end
 		end
 
-		desired_y = self.following.y-half_screen_height
+		desired_y = self.following.y + self.following.height - screen_height
 		self.y = desired_y
 	end,
 	update = function(self)
@@ -147,6 +146,9 @@ function make_scene(options)
 				music(-1)
 			end
 			options.init(self)
+		end,
+		get_ground = function(self, player)
+			return self.height
 		end,
 		add = function(self, object)
 			if (object.init) then
@@ -186,28 +188,7 @@ function change_scene(scene)
 	current_scene = scene
 end
 
-frame_rate = 60
-ground_y = screen_height
 gravity = 1
-calculate_position = function(t)
-	if (not t.dt) then
-		t.dt = 0 -- delta time
-	end
-
-	if (t.dy != 0) then
-		t.dt += 1
-		t.dy += gravity * (t.dt/frame_rate)
-	end
-
-	t.y = flr(min(ground_y - t.height, t.y + t.dy))
-	t.x += t.dx
-	
-	if (t.y + t.height == ground_y) then
-		t.dy = 0
-		t.dt = 0
-	end
-end
-
 min_speed=0.8
 max_speed=1.5
 acceleration=1.05
@@ -249,6 +230,11 @@ function make_player(scene)
 			end
 
 			local bottom_y = self.y + self.height
+			local ground_y = scene:get_ground(self)
+			-- local ground_y = screen_height
+
+			print(ground_y, 0,0,11)
+			
 
 			-- jumping
 			if (btn(2, self.player)) then
@@ -260,11 +246,26 @@ function make_player(scene)
 				end
 			end
 
-			calculate_position(self)
+			if (not self.dt) then
+				self.dt = 0 -- delta time
+			end
+
+			if (self.dy != 0) then
+				self.dt += 1
+				self.dy += gravity * (self.dt/frame_rate)
+			end
+
+			self.y = flr(min(ground_y - self.height, self.y + self.dy))
+			self.x += self.dx
+			
+			if (self.y + self.height == ground_y) then
+				self.dy = 0
+				self.dt = 0
+			end
 
 			if (self.x < -2) then
 				self.x = -2
-			elseif (self.x > screen_width) then
+			elseif (self.x > scene.width) then
 				self.x = screen_width
 			end
 
@@ -294,16 +295,18 @@ function make_player(scene)
 end
 
 game_scene = make_scene({
-	height = screen_height,
-	width = screen_width * 10,
+	height = screen_height * 5,
+	width = screen_width,
 	init = function(self)
 		local player = make_player(self)
+		player.y = self.height - player.height
+		cam:follow(player, 20)
 		self:add(player)
 	end,
 	update = function(self)
 	end,
 	draw = function(self)
-		local size = 8
+		local size = 16
 		for y = 0, self.height / size do
 			for x = 0, self.width / size do
 				local x_odd = x % 2 == 0
@@ -315,6 +318,7 @@ game_scene = make_scene({
 				local start_x = x * size
 				local start_y = y * size
 				rectfill(start_x, start_y, start_x + size, start_y + size, color)
+				print(start_y, start_x, start_y, 10)
 			end
 		end
 	end,
