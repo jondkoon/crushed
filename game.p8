@@ -319,9 +319,21 @@ game_scene = make_scene({
 	height = screen_height * 4,
 	width = screen_width,
 	get_ground = function(self, player)
-		return self.height
+		local ground
+		for block in all(self.blocks) do
+			if (not ground and test_collision(block, {
+				x = player.x,
+				y = block.y,
+				width = player.width,
+				height = player.height
+			})) then
+				ground = block.y
+			end
+		end
+		return ground or self.height
 	end,
 	init = function(self)
+		self.blocks = {}
 		local level_width = screen_width
 		local level_height = screen_height * 4
 		
@@ -332,6 +344,7 @@ game_scene = make_scene({
 				if (tile_id == 49) then
 					local block = make_block(tile_id, x, y)
 					self:add(block)
+					add(self.blocks, block)
 				end
 				if (tile_id == 16) then
 					player.x = x
@@ -413,8 +426,8 @@ title_scene = make_scene({
 	end
 })
 
--- current_scene = title_scene
-current_scene = game_scene
+current_scene = title_scene
+-- current_scene = game_scene
 
 function _init()
 	current_scene:init()
