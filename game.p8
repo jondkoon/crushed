@@ -629,15 +629,28 @@ game_scene = make_scene({
 			end
 		end
 	end,
+	check_to_grow = function(self)
+		for platform in all(self.platforms) do
+			local player = self.player
+			local is_touching = test_collision(platform, {
+				x = player.x - 1,
+				y = player.y - 1,
+				width = player.width + 2,
+				height = player.height + 2
+			})
+			platform:toggle_growth(is_touching)
+		end
+	end,
 	check_for_death = function(self, player)
 
 	end,
 	init = function(self)
 		self.blocks = {}
+		self.platforms = {}
 		local level_width = screen_width
 		local level_height = screen_height * 4
 
-		local player = make_player(self)
+		self.player = make_player(self)
 		for x = 0, level_width, tile_size do
 			for y = 0, level_height, tile_size do
 				local tile_id = mget(x / tile_size,y / tile_size)
@@ -651,21 +664,23 @@ game_scene = make_scene({
 					local platform = make_platform(x,y,8,8,{ up = true, down = true })
 					self:add(platform)
 					add(self.blocks, platform)
+					add(self.platforms, platform)
 				end
 				if (tile_id == 16) then
-					player.x = x + 40
-					player.y = y
-					player.dy = 1 -- falling
+					self.player.x = x + 40
+					self.player.y = y
+					self.player.dy = 1 -- falling
 				end
 			end
 		end
 
 		cam.y = self.height - screen_height
 
-		cam:follow(player, 20)
-		self:add(player)
+		cam:follow(self.player, 20)
+		self:add(self.player)
 	end,
 	update = function(self)
+		self:check_to_grow()
 	end,
 	draw = function(self)
 		local size = 16
