@@ -5,16 +5,6 @@ world = {
 	bounds = 128
 }
 
-behaviors = {
-	up = 1,
-	down = 2,
-	left = 3,
-	right = 4,
-	hor_stretch = 5,
-	vert_stretch = 6,
-	expand = 7
-}
-
 platforms = {}
 make_platform = function(x, y, w, h, appearance, directions)
 	platform = {
@@ -29,6 +19,7 @@ make_platform = function(x, y, w, h, appearance, directions)
 		counter = 1,
 		grow_delta = 2,
 		directions = directions,
+		should_grow = false,
 		available_x_slivers = {
 			{26, 0}, -- plain
 			{26, 0}, -- plain
@@ -73,7 +64,9 @@ make_platform = function(x, y, w, h, appearance, directions)
 		update = function(self)
 			self.counter += 1
 			if self.counter % 2 == 0 then
-				self:grow()
+				if self.should_grow then
+					self:grow()
+				end
 			end
 		end,
 		draw = function(self)
@@ -103,6 +96,9 @@ make_platform = function(x, y, w, h, appearance, directions)
 			local center_x1 = center_x0 + self.width - (self.corner_sprite_size * 2)
 			local center_y1 = center_y0 + self.height - (self.corner_sprite_size * 2)
 			rectfill(center_x0, center_y0, center_x1, center_y1, 11)
+
+			-- debug
+			print(self.should_grow, 100, 100)
 		end,
 		get_random_x_sliver = function(self)
 			local random_sliver_index = flr(rnd(#self.available_x_slivers)) + 1
@@ -152,6 +148,9 @@ make_platform = function(x, y, w, h, appearance, directions)
 		get_sliver_y_pos = function(self, i)
 			return self.y + self.height - 8
 		end,
+		toggle_growth = function(self, toggle)
+			self.should_grow = toggle
+		end,
 		grow = function(self)
 			local grow_up = self.directions.up
 			local grow_down = self.directions.down
@@ -199,7 +198,15 @@ function _init()
 	end
 end
 
+global_grow_toggle = false
 function _update()
+	if (btnp(5)) then
+		global_grow_toggle = not global_grow_toggle
+		for platform in all(platforms) do
+			platform:toggle_growth(global_grow_toggle)
+		end
+	end
+
 	for platform in all(platforms) do
 		platform:update()
 	end
