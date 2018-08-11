@@ -641,6 +641,64 @@ game_scene = make_scene({
 			platform:toggle_growth(is_touching)
 		end
 	end,
+	form_platform = function(self, map_x, map_y)
+		function is_behavior(tile_id)
+			return (tile_id >= 32 and tile_id <= 38)
+		end
+
+		function is_platform(tile_id)
+			return is_behavior(tile_id) or tile_id == 48
+		end
+
+		self.visited = self.visited or {}
+		local tile_id = mget(map_x,map_y)
+		if(not is_platform(tile_id) or self.visited[map_x..','..map_y]) then
+			return
+		end
+
+		local left_x = map_x
+		local top_y = map_y
+		local right_x = map_x
+		local bottom_y = map_y
+		local behavior
+
+		function visit_adjacent(map_x, map_y)
+			visit(map_x,map_y-1)
+			visit(map_x,map_y+1)
+			visit(map_x+1,map_y)
+			visit(map_x-1,map_y)
+		end		
+
+		function visit (map_x, map_y)
+			local key = map_x..','..map_y
+			if (self.visited[key]) then
+				return
+			else
+				self.visited[key] = true
+				local tile_id = mget(map_x,map_y)
+				if(is_platform(tile_id)) then
+					left_x = map_x < left_x and map_x or left_x
+					right_x = map_x > right_x and map_x or right_x
+					top_y = map_y < top_y and map_y or top_y
+					bottom_y = map_y > bottom_y and map_y or bottom_y
+					if (not behavior and is_behavior(tile_id)) then
+						behavior = tile_id
+					end			
+					visit_adjacent(map_x, map_y)
+				end
+			end
+		end
+
+		visit(map_x, map_y)
+
+		local x = left_x * tile_size
+		local y = top_y * tile_size
+		local width = (right_x - left_x) * tile_size + tile_size
+		local height = (bottom_y - top_y) * tile_size + tile_size
+
+		local platform = make_platform(x,y,width,height,{ up = true, down = true })
+		return platform
+	end,
 	check_for_death = function(self, player)
 
 	end,
@@ -653,23 +711,24 @@ game_scene = make_scene({
 		self.player = make_player(self)
 		for x = 0, level_width, tile_size do
 			for y = 0, level_height, tile_size do
-				local tile_id = mget(x / tile_size,y / tile_size)
+				local map_x = x / tile_size
+				local map_y = y / tile_size
+				local tile_id = mget(map_x, map_y)
 				if (tile_id == 49) then
 					local block = make_block(tile_id, x, y)
 					self:add(block)
 					add(self.blocks, block)
-				end
-
-				if (tile_id == 37) then
-					local platform = make_platform(x,y,8,8,{ up = true, down = true })
-					self:add(platform)
-					add(self.blocks, platform)
-					add(self.platforms, platform)
-				end
-				if (tile_id == 16) then
+				elseif (tile_id == 16) then
 					self.player.x = x + 40
 					self.player.y = y
 					self.player.dy = 1 -- falling
+				else
+					local platform = self:form_platform(map_x, map_y)
+					if (platform) then
+						self:add(platform)
+						add(self.blocks, platform)
+						add(self.platforms, platform)
+					end
 				end
 			end
 		end
