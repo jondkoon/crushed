@@ -216,13 +216,13 @@ function make_scene(options)
 		end,
 		fade_down = function(self, fade_callback)
 			self.fade_timer = 0
-			self.fade_timer_dx = 0.5
+			self.fade_timer_dx = 1
 			self.fade_max = 30
 			self.fade_callback = fade_callback
 		end,
 		fade_up = function(self, fade_callback)
 			self.fade_timer = 30
-			self.fade_timer_dx = -0.5
+			self.fade_timer_dx = -1
 			self.fade_callback = fade_callback
 		end,
 		add = function(self, object)
@@ -262,11 +262,17 @@ function make_scene(options)
 	return merge_tables(options, scene)
 end
 
+local changing_scene = false
 function change_scene(scene)
+	if (changing_scene) then
+		return
+	end
+	changing_scene = true
 	current_scene:fade_down(function()
 		scene:init()
 		current_scene = scene
 		scene:fade_up()
+		changing_scene = false
 	end)
 end
 
@@ -665,164 +671,183 @@ function make_block(tile_id, x, y)
 	}
 end
 
-game_scene = make_scene({
-	height = screen_height * 4,
-	width = screen_width,
-	background_tile = 53,
-	needs_background = {},
-	paint_background = function(self, x, y)
-		add(self.needs_background, { x = x, y = y})
-	end,
-	get_ground = function(self, player)
-		local ground
-		for block in all(self.blocks) do
-			if (not ground and test_collision(block, {
-				x = player.x,
-				y = player.y + 2,
-				width = player.width,
-				height = player.height
-			})) then
-				ground = block.y
+function make_chalice(x,y)
+	return {
+		x = x,
+		y = y,
+		width = 8,
+		height = 8
+	}
+end
+
+function make_game_scene()
+	return make_scene({
+		height = screen_height * 4,
+		width = screen_width,
+		background_tile = 53,
+		needs_background = {},
+		paint_background = function(self, x, y)
+			add(self.needs_background, { x = x, y = y})
+		end,
+		get_ground = function(self, player)
+			local ground
+			for block in all(self.blocks) do
+				if (not ground and test_collision(block, {
+					x = player.x,
+					y = player.y + 2,
+					width = player.width,
+					height = player.height
+				})) then
+					ground = block.y
+				end
 			end
-		end
-		return ground or self.height
-	end,
-	check_block_collision = function(self, player)
-		for block in all(self.blocks) do
-			if (test_collision(block, player)) then
-				return true
+			return ground or self.height
+		end,
+		check_block_collision = function(self, player)
+			for block in all(self.blocks) do
+				if (test_collision(block, player)) then
+					return true
+				end
 			end
-		end
-	end,
-	check_to_grow = function(self)
-		for platform in all(self.platforms) do
-			local player = self.player
-			local is_touching = test_collision(platform, {
-				x = player.x - 1,
-				y = player.y - 1,
-				width = player.width + 2,
-				height = player.height + 2
-			})
-			platform:toggle_growth(is_touching)
-		end
-	end,
-	form_platform = function(self, map_x, map_y)
-		function is_behavior(tile_id)
-			return (tile_id >= 32 and tile_id <= 46)
-		end
+		end,
+		check_to_grow = function(self)
+			for platform in all(self.platforms) do
+				local player = self.player
+				local is_touching = test_collision(platform, {
+					x = player.x - 1,
+					y = player.y - 1,
+					width = player.width + 2,
+					height = player.height + 2
+				})
+				platform:toggle_growth(is_touching)
+			end
+		end,
+		form_platform = function(self, map_x, map_y)
+			function is_behavior(tile_id)
+				return (tile_id >= 32 and tile_id <= 46)
+			end
 
-		function is_platform(tile_id)
-			return is_behavior(tile_id) or tile_id == 48
-		end
+			function is_platform(tile_id)
+				return is_behavior(tile_id) or tile_id == 48
+			end
 
-		self.visited = self.visited or {}
-		local tile_id = mget(map_x,map_y)
-		if(not is_platform(tile_id) or self.visited[map_x..','..map_y]) then
-			return
-		end
-
-		local left_x = map_x
-		local top_y = map_y
-		local right_x = map_x
-		local bottom_y = map_y
-		local behavior
-
-		function visit_adjacent(map_x, map_y)
-			visit(map_x,map_y-1)
-			visit(map_x,map_y+1)
-			visit(map_x+1,map_y)
-			visit(map_x-1,map_y)
-		end
-
-		function visit (map_x, map_y)
-			local key = map_x..','..map_y
-			if (self.visited[key]) then
+			self.visited = self.visited or {}
+			local tile_id = mget(map_x,map_y)
+			if(not is_platform(tile_id) or self.visited[map_x..','..map_y]) then
 				return
-			else
-				self.visited[key] = true
-				local tile_id = mget(map_x,map_y)
-				if(is_platform(tile_id)) then
-					left_x = map_x < left_x and map_x or left_x
-					right_x = map_x > right_x and map_x or right_x
-					top_y = map_y < top_y and map_y or top_y
-					bottom_y = map_y > bottom_y and map_y or bottom_y
-					if (not behavior and is_behavior(tile_id)) then
-						behavior = tile_id
-					end
-					self:paint_background(map_x*tile_size, map_y*tile_size)
-					visit_adjacent(map_x, map_y)
-				end
 			end
-		end
 
-		visit(map_x, map_y)
+			local left_x = map_x
+			local top_y = map_y
+			local right_x = map_x
+			local bottom_y = map_y
+			local behavior
 
-		local x = left_x * tile_size
-		local y = top_y * tile_size
-		local width = (right_x - left_x) * tile_size + tile_size
-		local height = (bottom_y - top_y) * tile_size + tile_size
+			function visit_adjacent(map_x, map_y)
+				visit(map_x,map_y-1)
+				visit(map_x,map_y+1)
+				visit(map_x+1,map_y)
+				visit(map_x-1,map_y)
+			end		
 
-		local up = fget(behavior, 0)
-		local right = fget(behavior, 1)
-		local down = fget(behavior, 2)
-		local left = fget(behavior, 3)
-
-		local platform = make_platform(x,y,width,height,{ up = up, down = down, right = right, left = left })
-		return platform
-	end,
-	check_for_death = function(self, player)
-
-	end,
-	init = function(self)
-		self.blocks = {}
-		self.platforms = {}
-		local level_width = screen_width
-		local level_height = screen_height * 4
-
-		self.player = make_player(self)
-		for x = 0, level_width, tile_size do
-			for y = 0, level_height, tile_size do
-				local map_x = x / tile_size
-				local map_y = y / tile_size
-				local tile_id = mget(map_x, map_y)
-				if (fget(tile_id, 7)) then
-					local block = make_block(tile_id, x, y)
-					self:add(block)
-					add(self.blocks, block)
-				elseif (tile_id == 16) then
-					self:paint_background(x,y)
-					self.player.x = x
-					self.player.y = y
-					self.player.dy = 1 -- falling
+			function visit (map_x, map_y)
+				local key = map_x..','..map_y
+				if (self.visited[key]) then
+					return
 				else
-					local platform = self:form_platform(map_x, map_y)
-					if (platform) then
-						self:add(platform)
-						add(self.blocks, platform)
-						add(self.platforms, platform)
+					self.visited[key] = true
+					local tile_id = mget(map_x,map_y)
+					if(is_platform(tile_id)) then
+						left_x = map_x < left_x and map_x or left_x
+						right_x = map_x > right_x and map_x or right_x
+						top_y = map_y < top_y and map_y or top_y
+						bottom_y = map_y > bottom_y and map_y or bottom_y
+						if (not behavior and is_behavior(tile_id)) then
+							behavior = tile_id
+						end
+						self:paint_background(map_x*tile_size, map_y*tile_size)
+						visit_adjacent(map_x, map_y)
 					end
 				end
 			end
-		end
 
-		cam.y = self.height - screen_height
+			visit(map_x, map_y)
 
-		cam:follow(self.player, 20)
-		self:add(self.player)
-	end,
-	update = function(self)
-		self:check_to_grow()
-	end,
-	draw = function(self)
-		self:fade_update()
-		palt(0, false)
-		map(0, 0, 0, 0, screen_width / 8, screen_height * 4 / 8)
-		for bg in all(self.needs_background) do
-			spr(self.background_tile, bg.x, bg.y)
-		end
-		palt(0, true)
-	end,
-})
+			local x = left_x * tile_size
+			local y = top_y * tile_size
+			local width = (right_x - left_x) * tile_size + tile_size
+			local height = (bottom_y - top_y) * tile_size + tile_size
+
+			local up = fget(behavior, 0)
+			local right = fget(behavior, 1)
+			local down = fget(behavior, 2)
+			local left = fget(behavior, 3)
+
+			local platform = make_platform(x,y,width,height,{ up = up, down = down, right = right, left = left })
+			return platform
+		end,
+		check_for_win = function(self)
+			if (test_collision(self.player, self.chalice)) then
+				change_scene(winning_scene)
+			end
+		end,
+		check_for_death = function(self)
+
+		end,
+		init = function(self)
+			self.blocks = {}
+			self.platforms = {}
+			local level_width = screen_width
+			local level_height = screen_height * 4
+
+			self.player = make_player(self)
+			for x = 0, level_width, tile_size do
+				for y = 0, level_height, tile_size do
+					local map_x = x / tile_size
+					local map_y = y / tile_size
+					local tile_id = mget(map_x, map_y)
+					if (fget(tile_id, 7)) then
+						local block = make_block(tile_id, x, y)
+						self:add(block)
+						add(self.blocks, block)
+					elseif (tile_id == 16) then
+						self:paint_background(x,y)
+						self.player.x = x
+						self.player.y = y
+						self.player.dy = 1 -- falling
+					elseif (tile_id == 71) then
+						self.chalice = make_chalice(x,y)
+					else
+						local platform = self:form_platform(map_x, map_y)
+						if (platform) then
+							self:add(platform)
+							add(self.blocks, platform)
+							add(self.platforms, platform)
+						end
+					end
+				end
+			end
+
+			cam.y = self.height - screen_height
+
+			cam:follow(self.player, 20)
+			self:add(self.player)
+		end,
+		update = function(self)
+			self:check_to_grow()
+			self:check_for_win()
+		end,
+		draw = function(self)
+			self:fade_update()
+			palt(0, false)
+			map(0, 0, 0, 0, screen_width / 8, screen_height * 4 / 8)
+			for bg in all(self.needs_background) do
+				spr(self.background_tile, bg.x, bg.y)
+			end		
+			palt(0, true)
+		end,
+	})
+end
 
 function checker_board(scene)
 	local size = 16
@@ -847,7 +872,7 @@ local title = {
 	height = 4,
 	init = function(self)
 		self.text = "crushed"
-		self.width = (#self.text + 2) * 4
+		self.width = (#self.text) * 4
 		self.x = (screen_width - self.width) / 2
 	end,
 	draw = function(self)
@@ -855,43 +880,76 @@ local title = {
 	end
 }
 
-local start_prompt = {
-	y = title.y + title.height + 20,
-	height = 4,
-	init = function(self)
-		self.text = "press ❎ or 🅾️ to start"
-		self.width = (#self.text + 2) * 4
-		self.x = (screen_width - self.width) / 2
-		self.timer = 60
-	end,
-	update = function(self)
-		self.timer -= 1
-		if (self.timer < -20) then
+make_start_prompt = function(y,text)
+	return {
+		y = y,
+		height = 4,
+		init = function(self)
+			self.text = text or "press ❎ or 🅾️ to start"
+			self.width = (#self.text) * 4 + 4
+			self.x = (screen_width - self.width) / 2
 			self.timer = 60
+		end,
+		update = function(self)
+			self.timer -= 1
+			if (self.timer < -20) then
+				self.timer = 60
+			end
+			if (btn(4) or btn(5)) then
+				change_scene(make_game_scene())
+			end
+		end,
+		draw = function(self)
+			if (self.timer > 0) then
+				print(self.text, self.x, self.y, 7)
+			end
 		end
-		if (btn(4) or btn(5)) then
-			change_scene(game_scene)
-		end
-	end,
-	draw = function(self)
-		if (self.timer > 0) then
-			print(self.text, self.x, self.y, 7)
-		end
-	end
-}
+	}
+end
 
 title_scene = make_scene({
 	height = screen_height,
 	width = screen_width,
-	music = 5,
+	draw = function(self)
+		cls(1)
+	end,	
 	init = function(self)
 		self:add(title)
-		self:add(start_prompt)
+		self:add(make_start_prompt(title.y + title.height + 20))
 	end
 })
 
--- current_scene = title_scene
-current_scene = game_scene
+local you_won = {
+	y = 35,
+	height = 4,
+	init = function(self)
+		self.text = "you're a winner"
+		self.width = (#self.text) * 4
+		self.x = (screen_width - self.width) / 2
+	end,
+	draw = function(self)
+		palt(1, true)
+		spr(71, screen_width / 2 - 4, self.y)
+		palt(1, false)		
+		print(self.text, self.x, self.y + 15, 7)
+	end
+}
+
+winning_scene = make_scene({
+	height = screen_height,
+	width = screen_width,
+	draw = function(self)
+		cls(1)
+	end,
+	init = function(self)
+		self:add(you_won)
+		self:add(make_start_prompt(70, "press ❎ or 🅾️ to play again"))
+	end
+})
+
+current_scene = title_scene
+-- current_scene = make_game_scene()
+-- current_scene = winning_scene
 
 function _init()
 	current_scene:init()
