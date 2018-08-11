@@ -55,6 +55,23 @@ make_platform = function(x, y, w, h, appearance, behavior)
 			bottom = {},
 			left = {}
 		},
+		init = function(self)
+			-- populate slivers for width/height > 16
+			if (self.width > 16) then
+				local hor_slivers = (self.width - 16) / 2
+				for i = 1, hor_slivers do
+					add(self.slivers["top"], self:get_random_x_sliver())
+					add(self.slivers["bottom"], self:get_random_x_sliver())
+				end
+			end
+			if (self.height > 16) then
+				local vert_slivers = (self.height - 16) / 2
+				for i = 1, vert_slivers do
+					add(self.slivers["right"], self:get_random_y_sliver())
+					add(self.slivers["left"], self:get_random_y_sliver())
+				end
+			end
+		end,
 		update = function(self)
 			self.counter += 1
 			if self.counter % 30 == 0 then
@@ -158,9 +175,13 @@ make_platform = function(x, y, w, h, appearance, behavior)
 end
 
 function _init()
-	make_platform(64, 64, 16, 16, nil, behaviors.expand)
+	make_platform(64, 64, 16, 40, nil, behaviors.expand)
 
 	make_platform(6, 12, 16, 16, nil, behaviors.expand)
+
+	for platform in all(platforms) do
+		platform:init()
+	end
 end
 
 function _update()
