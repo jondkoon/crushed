@@ -608,6 +608,11 @@ end
 game_scene = make_scene({
 	height = screen_height * 4,
 	width = screen_width,
+	background_tile = 53,
+	needs_background = {},
+	paint_background = function(self, x, y)
+		add(self.needs_background, { x = x, y = y})
+	end,
 	get_ground = function(self, player)
 		local ground
 		for block in all(self.blocks) do
@@ -684,6 +689,7 @@ game_scene = make_scene({
 					if (not behavior and is_behavior(tile_id)) then
 						behavior = tile_id
 					end
+					self:paint_background(map_x*tile_size, map_y*tile_size)
 					visit_adjacent(map_x, map_y)
 				end
 			end
@@ -724,6 +730,7 @@ game_scene = make_scene({
 					self:add(block)
 					add(self.blocks, block)
 				elseif (tile_id == 16) then
+					self:paint_background(x,y)
 					self.player.x = x
 					self.player.y = y
 					self.player.dy = 1 -- falling
@@ -749,6 +756,9 @@ game_scene = make_scene({
 	draw = function(self)
 		palt(0, false)
 		map(0, 0, 0, 0, screen_width / 8, screen_height * 4 / 8)
+		for bg in all(self.needs_background) do
+			spr(self.background_tile, bg.x, bg.y)
+		end
 		palt(0, true)
 	end,
 })
