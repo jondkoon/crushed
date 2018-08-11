@@ -206,7 +206,7 @@ function make_player(scene)
 		x = 40,
 		y = 120,
 		width = 3,
-		height = 8,
+		height = 7,
 		dy = 0,
 		dx = 0,
 		default_sprite = 16,
@@ -266,10 +266,10 @@ function make_player(scene)
 				self.dt = 0
 			end
 
-			if (self.x < -2) then
-				self.x = -2
-			elseif (self.x > scene.width) then
-				self.x = screen_width
+			if (self.x < 0) then
+				self.x = 0
+			elseif (self.x + self.width > scene.width) then
+				self.x = scene.width - self.width
 			end
 
 			-- in the air
@@ -326,6 +326,13 @@ game_scene = make_scene({
 			end
 		end
 		return ground or self.height
+	end,
+	check_block_collision = function(self, player)
+		for block in all(self.blocks) do
+			if (test_collision(block, player)) then
+				return true
+			end
+		end
 	end,
 	init = function(self)
 		self.blocks = {}
