@@ -171,11 +171,11 @@ function make_scene(options)
 		draw = function(self)
 			cls(0)
 			cam:set()
-			for object in all(self.objects) do
-				object:draw()
-			end
 			if (options.draw) then
 				options.draw(self)
+			end
+			for object in all(self.objects) do
+				object:draw()
 			end
 		end
 	}
@@ -212,89 +212,89 @@ min_speed=0.8
 max_speed=1.5
 acceleration=1.05
 function make_player(scene)
-	local player = {}
-	player.player = 0
-	player.x = 40
-	player.y = 120
-	player.width = 8
-	player.height = 8
-	player.dy = 0
-	player.dx = 0
-	player.default_sprite = 16
-	player.squating_sprite = 17
-	player.jumping_sprite = 18
-	player.moving_right_sprite = 19
-	player.moving_left_sprite = 20
-	player.jumping_right_sprite = 21
-	player.jumping_left_sprite = 22
-	player.update = function(self)
-		self.squating = btn(3, self.player)
-		if (btn(0, self.player)) then 
-			if (self.dx > -min_speed) then
-				self.dx = -min_speed
-			elseif (self.dx > -max_speed) then
-				self.dx *= acceleration
-			end
-		elseif (btn(1, self.player)) then
-			if (self.dx < min_speed) then
-				self.dx = min_speed
-			elseif (self.dx < max_speed) then
-				self.dx *= acceleration
-			end
-		-- if velocity is above threshold but no button is being pushed decelerate
-		elseif (abs(self.dx) > 0.2) then
-			self.dx *= 0.75
-		else
-			self.dx = 0
-		end
-
-		local bottom_y = self.y + self.height
-
-		-- jumping
-		if (btn(2, self.player)) then
-			if (bottom_y == ground_y) then
-				self.dy = -0.8
-			-- the longer you push jump the higher you will go
-			elseif (self.dy < 0 and self.dy > -1.3) then
-				self.dy *= 1.15
-			end
-		end
-
-		calculate_position(self)
-
-		if (self.x < -2) then
-			self.x = -2
-		elseif (self.x > screen_width) then
-			self.x = screen_width
-		end
-
-		-- in the air
-		if (bottom_y < ground_y) then
-			if (self.dx > 0) then
-				self.sprite = self.jumping_right_sprite		
-			elseif (self.dx < 0) then
-				self.sprite = self.jumping_left_sprite		
+	return {
+		player = 0,
+		x = 40,
+		y = 120,
+		width = 8,
+		height = 8,
+		dy = 0,
+		dx = 0,
+		default_sprite = 16,
+		squating_sprite = 17,
+		jumping_sprite = 18,
+		moving_right_sprite = 19,
+		moving_left_sprite = 20,
+		jumping_right_sprite = 21,
+		jumping_left_sprite = 22,
+		update = function(self)
+			self.squating = btn(3, self.player)
+			if (btn(0, self.player)) then 
+				if (self.dx > -min_speed) then
+					self.dx = -min_speed
+				elseif (self.dx > -max_speed) then
+					self.dx *= acceleration
+				end
+			elseif (btn(1, self.player)) then
+				if (self.dx < min_speed) then
+					self.dx = min_speed
+				elseif (self.dx < max_speed) then
+					self.dx *= acceleration
+				end
+			-- if velocity is above threshold but no button is being pushed decelerate
+			elseif (abs(self.dx) > 0.2) then
+				self.dx *= 0.75
 			else
-				self.sprite = self.jumping_sprite
-			end	
-		elseif (self.squating) then
-			self.sprite = self.squating_sprite
-		elseif (self.dx > 0) then
-			self.sprite = self.moving_right_sprite		
-		elseif (self.dx < 0) then
-			self.sprite = self.moving_left_sprite		
-		else
-			self.sprite = self.default_sprite
+				self.dx = 0
+			end
+
+			local bottom_y = self.y + self.height
+
+			-- jumping
+			if (btn(2, self.player)) then
+				if (bottom_y == ground_y) then
+					self.dy = -0.8
+				-- the longer you push jump the higher you will go
+				elseif (self.dy < 0 and self.dy > -1.3) then
+					self.dy *= 1.15
+				end
+			end
+
+			calculate_position(self)
+
+			if (self.x < -2) then
+				self.x = -2
+			elseif (self.x > screen_width) then
+				self.x = screen_width
+			end
+
+			-- in the air
+			if (bottom_y < ground_y) then
+				if (self.dx > 0) then
+					self.sprite = self.jumping_right_sprite		
+				elseif (self.dx < 0) then
+					self.sprite = self.jumping_left_sprite		
+				else
+					self.sprite = self.jumping_sprite
+				end	
+			elseif (self.squating) then
+				self.sprite = self.squating_sprite
+			elseif (self.dx > 0) then
+				self.sprite = self.moving_right_sprite		
+			elseif (self.dx < 0) then
+				self.sprite = self.moving_left_sprite		
+			else
+				self.sprite = self.default_sprite
+			end
+		end,
+		draw = function(self)
+			spr(self.sprite, self.x, self.y)
 		end
-	end
-	player.draw = function(self)
-		spr(self.sprite, self.x, self.y)
-	end
-	return player
+	}
 end
 
 game_scene = make_scene({
-	height = screen_height + half_screen_height,
+	height = screen_height,
 	width = screen_width * 10,
 	init = function(self)
 		local player = make_player(self)
@@ -303,6 +303,20 @@ game_scene = make_scene({
 	update = function(self)
 	end,
 	draw = function(self)
+		local size = 8
+		for y = 0, self.height / size do
+			for x = 0, self.width / size do
+				local x_odd = x % 2 == 0
+				local y_odd = y % 2 == 0
+				local color = x_odd and 5 or 6
+				if (y_odd) then
+					color = x_odd and 6 or 5
+				end
+				local start_x = x * size
+				local start_y = y * size
+				rectfill(start_x, start_y, start_x + size, start_y + size, color)
+			end
+		end
 	end,
 })
 
