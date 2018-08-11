@@ -6,57 +6,68 @@ world = {
 }
 
 platforms = {}
-make_platform = function(x, y, w, h, appearance, directions)
+make_platform = function(x, y, w, h, directions)
 	platform = {
 		x = x,
 		y = y,
 		width = w,
 		height = h,
-		corner_sprite = 3,
+		directions = directions,
 		corner_size = 4,
 		sliver_width = 2,
-		sliver_height = 7,
+		sliver_height = 6,
 		counter = 1,
 		grow_delta = 2,
-		directions = directions,
 		should_grow = true,
-		grow_speed = 10,
-		available_x_slivers = {
-			{26, 0}, -- plain
-			{26, 0}, -- plain
-			{40, 0}, -- spotted
-			{42, 0},
-			{44, 0},
-			{46, 0}
-		},
-		available_y_slivers = {
-			{64, 6}, -- plain
-			{64, 6}, -- plain
-			{56, 0}, -- spotted
-			{56, 2},
-			{56, 4},
-			{56, 6}
+		grow_speed = 3,
+		available_slivers = {
+			top = {
+				{26, 0}, -- plain
+				{48, 0}, -- dripping
+				{50, 0},
+				{52, 0},
+				{54, 0},
+			},
+			bottom = {
+				{26, 0}, -- plain
+				{26, 0}, -- plain
+				{40, 0}, -- spotted
+				{42, 0},
+				{44, 0},
+				{46, 0}
+			},
+			left = {
+				{64, 6}, -- plain
+				{64, 6}, -- plain
+				{56, 0}, -- spotted
+				{56, 2},
+				{56, 4},
+				{56, 6}
+			},
+			right = {
+				{104, 0}, -- shine
+			},
 		},
 		slivers = {
-			top = {},
-			right = {},
 			bottom = {},
-			left = {}
+			top = {},
+			left = {},
+			right = {}
 		},
 		init = function(self)
 			-- populate slivers for width/height > (self.corner_size*2)
 			if (self.width > (self.corner_size*2)) then
-				local hor_slivers = (self.width - (self.corner_size*2)) / 2
-				for i = 1, hor_slivers do
-					add(self.slivers["top"], self:get_random_x_sliver())
-					add(self.slivers["bottom"], self:get_random_x_sliver())
+				local hor_number_slivers_to_create = (self.width - (self.corner_size*2)) / 2
+				for i = 1, hor_number_slivers_to_create do
+					add(self.slivers["top"], self:get_random_sliver("top"))
+					add(self.slivers["bottom"], self:get_random_sliver("bottom"))
 				end
 			end
 			if (self.height > (self.corner_size*2)) then
-				local vert_slivers = (self.height - (self.corner_size*2)) / 2
-				for i = 1, vert_slivers do
-					add(self.slivers["right"], self:get_random_y_sliver())
-					add(self.slivers["left"], self:get_random_y_sliver())
+				local vert_number_slivers_to_create = (self.height - (self.corner_size*2)) / 2
+				for i = 1, vert_number_slivers_to_create do
+					add(self.slivers["right"], self:get_random_sliver("right"))
+					add(self.slivers["left"], self:get_random_sliver("left"))
 				end
 			end
 		end,
@@ -80,17 +91,21 @@ make_platform = function(x, y, w, h, appearance, directions)
 			rectfill(center_x0, center_y0, center_x1, center_y1, 11)
 
 			-- slivers
-			for key, collection in pairs(self.slivers) do
-				for j = 1, #collection do
-					self:draw_sliver(key, j, collection[j])
-				end
-			end
+			self:draw_slivers()
 
 			-- corners
 			self:draw_corners()
 
 			-- debug
 			-- print(self.should_grow, 100, 100)
+		end,
+		draw_slivers = function(self)
+			local draw_order = {'bottom', 'left', 'top', 'right'}
+			for i, side in pairs(draw_order) do
+				for j = 1, #self.slivers[side] do
+					self:draw_sliver(side, j, self.slivers[side][j])
+				end
+			end
 		end,
 		draw_corners = function(self)
 			local top_left = {x=88,y=0}
@@ -146,43 +161,36 @@ make_platform = function(x, y, w, h, appearance, directions)
 				self.corner_size
 			)
 		end,
-		get_random_x_sliver = function(self)
-			local random_sliver_index = flr(rnd(#self.available_x_slivers)) + 1
-			return self.available_x_slivers[random_sliver_index]
+		get_random_sliver = function(self, side)
+			local collection = self.available_slivers[side]
+			local random_sliver_index = flr(rnd(#collection)) + 1
+			return collection[random_sliver_index]
 		end,
-		get_random_y_sliver = function(self)
-			local random_sliver_index = flr(rnd(#self.available_y_slivers)) + 1
-			return self.available_y_slivers[random_sliver_index]
+		make_sliver = function(self, side)
+			add(self.slivers[side], self:get_random_sliver(side))
 		end,
-		make_sliver = function(self, key)
-			if (key == "top" or key == "bottom") then
-				add(self.slivers[key], self:get_random_x_sliver())
-			elseif (key == "right" or key == "left") then
-				add(self.slivers[key], self:get_random_y_sliver())
-			end
-		end,
-		draw_sliver = function(self, key, i, sliver)
+		draw_sliver = function(self, side, i, sliver)
 			local spr_x = sliver[1]
 			local spr_y = sliver[2]
 
-			if (key == "top") then
+			if (side == "top") then
 				local x = self.x + self.corner_size + (self.grow_delta * (i - 1))
 				sspr(spr_x, spr_y, self.sliver_width, self.sliver_height, x, self.y, self.sliver_width, self.sliver_height)
 			end
 
-			if (key == "bottom") then
+			if (side == "bottom") then
 				local x = self.x + self.corner_size + (self.grow_delta * (i - 1))
 				local y = self.y + self.height - self.sliver_height
 				sspr(spr_x, spr_y, self.sliver_width, self.sliver_height, x, y, self.sliver_width, self.sliver_height, false, true)
 			end
 
-			if (key == "left") then
+			if (side == "left") then
 				local x = self.x
 				local y = self.y + self.corner_size + (self.grow_delta * (i - 1))
 				sspr(spr_x, spr_y, self.sliver_height, self.sliver_width, x, y, self.sliver_height, self.sliver_width)
 			end
 
-			if (key == "right") then
+			if (side == "right") then
 				local x = self.x + self.width - self.sliver_height
 				local y = self.y + self.corner_size + (self.grow_delta * (i - 1))
 				sspr(spr_x, spr_y, self.sliver_height, self.sliver_width, x, y, self.sliver_height, self.sliver_width, true, false)
@@ -229,10 +237,10 @@ make_platform = function(x, y, w, h, appearance, directions)
 end
 
 function _init()
-	make_platform(6, 64, 16, 40, nil, {up=true,down=false,left=true,right=false})
-	make_platform(64, 20, 16, 8, nil, {up=true,down=true,left=true,right=true})
-	make_platform(100, 64, 8, 8, nil, {up=false,down=false,left=true,right=false})
-	make_platform(112, 64, 8, 8, nil, {up=false,down=true,left=false,right=false})
+	make_platform(6, 64, 16, 40, {up=true,down=false,left=true,right=false})
+	make_platform(64, 20, 16, 8, {up=true,down=true,left=true,right=true})
+	make_platform(100, 64, 8, 8, {up=false,down=false,left=true,right=false})
+	make_platform(112, 64, 8, 8, {up=false,down=true,left=false,right=false})
 
 	for platform in all(platforms) do
 		platform:init()
@@ -240,7 +248,7 @@ function _init()
 end
 
 global_grow_toggle = true
-function _update()
+function _update60()
 	if (btnp(5)) then
 		global_grow_toggle = not global_grow_toggle
 		for platform in all(platforms) do
@@ -260,11 +268,11 @@ function _draw()
 	end
 end
 __gfx__
-000000000000033333333333003333330003333333333333333333333bbbb6bb3bbbbbbb00333333003333000033330033333300000000000000000000000000
-0000000000003bbbbbbbbbbb03bbbbbb003bbbbbbbbbbbbbbbbbbbbb3bbbbbbb3bbbbbbb03bbbbbb03bbbb3003bbbb30bbbbbb30000000000000000000000000
-007007000003bbbbbb7bbbbb3bbbbbbb03bbbbbbb6bbbbbbb7bbbbbb3bbb6bbb3bbbbbbb3bbbbbbb3bbbbbb33bbb7bb3bbbbbbb3000000000000000000000000
-00077000003bbbbbbbbbbb7b3bbbbbbb3bbbbbbbbbb6bbbbbbbbb7bb3bbbbbbb3bbbbbbb3bbbbbbb3bbbbbb33bbbb7b3bbbbbbb3000000000000000000000000
-0007700003bbbbbbbb7bbbbb3bbbbbbb3bbbbbbbbbbbb6bbb7bbbbbb3bb6bbbb3bbbbbbb3bbbbbbb3bbbbbb33bbbbbb3bbbbbbb3000000000000000000000000
-007007003bbbbbbbbb7bbb7b3bbbbbbb3bbbbbbbbbbbbbb6b7bbb7bb3bbbbbbb3bbbbbbb3bbbbbbb3bbbbbb33bbbbbb3bbbbbbb3000000000000000000000000
-000000003bbbbbbbbbbbbb7b3bbbbbbb3bbbbbbbbbbbbbbbbbbbb7bb3b6bbbbb3bbbbbbb03bbbbbb3bbbbbb303bbbb30bbbbbb30000000000000000000000000
-000000003bbbbbbbbbbbbbbb3bbbbbbb3bbbbbbbbbbbbbbbbbbbbbbb3bbbbbbb3bbbbbbb003333333bbbbbb30033330033333300000000000000000000000000
+000000000000033333333333003333330003333333333333333333333bbbb6bb3bbbbbbb003333330033330000333300333333003b7bbbbb0000000000000000
+0000000000003bbbbbbbbbbb03bbbbbb003bbbbbbbbbbbbb3b3b3b3b3bbbbbbb3bbbbbbb03bbbbbb03bbbb3003bbbb30bbbbbb303b7bbbbb0000000000000000
+007007000003bbbbbb7bbbbb3bbbbbbb03bbbbbbb6bbbbbb3b3b3bbb3bbb6bbb3bbbbbbb3bbbbbbb3bbbbbb33bbb7bb3bbbbbbb33b7bbbbb0000000000000000
+00077000003bbbbbbbbbbb7b3bbbbbbb3bbbbbbbbbb6bbbb3b3bbbbb3bbbbbbb3bbbbbbb3bbbbbbb3bbbbbb33bbbb7b3bbbbbbb33b7bbbbb0000000000000000
+0007700003bbbbbbbb7bbbbb3bbbbbbb3bbbbbbbbbbbb6bb3bbbbbbb3bb6bbbb3bbbbbbb3bbbbbbb3bbbbbb33bbbbbb3bbbbbbb33b7bbbbb0000000000000000
+007007003bbbbbbbbb7bbb7b3bbbbbbb3bbbbbbbbbbbbbb6bbbbbbbb3bbbbbbb3bbbbbbb3bbbbbbb3bbbbbb33bbbbbb3bbbbbbb33b7bbbbb0000000000000000
+000000003bbbbbbbbbbbbb7b3bbbbbbb3bbbbbbbbbbbbbbbbbbbbbbb3b6bbbbb3bbbbbbb03bbbbbb3bbbbbb303bbbb30bbbbbb303b7bbbbb0000000000000000
+000000003bbbbbbbbbbbbbbb3bbbbbbb3bbbbbbbbbbbbbbbbbbbbbbb3bbbbbbb3bbbbbbb003333333bbbbbb300333300333333003b7bbbbb0000000000000000
