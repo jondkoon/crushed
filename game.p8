@@ -53,6 +53,35 @@ function merge_tables(a, b)
 	return a
 end
 
+local fadetable = {
+ {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+ {1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+ {2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0},
+ {3,3,3,3,3,3,3,3,3,3,3,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0},
+ {4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0},
+ {5,5,5,5,5,5,5,5,5,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0},
+ {6,6,6,6,13,13,13,13,13,13,13,13,5,5,5,5,5,5,5,5,1,1,1,1,1,0,0,0,0},
+ {7,7,7,6,6,6,6,6,6,13,13,13,13,13,13,5,5,5,5,5,5,5,1,1,1,1,0,0,0},
+ {8,8,8,8,8,8,8,8,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,0},
+ {9,9,9,9,9,9,9,4,4,4,4,4,4,4,4,4,4,5,5,5,5,0,0,0,0,0,0,0,0},
+ {10,10,10,10,10,9,9,9,9,4,4,4,4,4,4,4,5,5,5,5,5,5,1,0,0,0,0,0,0},
+ {11,11,11,11,11,11,11,3,3,3,3,3,3,3,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0},
+ {12,12,12,12,12,12,12,12,12,3,3,3,3,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0},
+ {13,13,13,13,13,13,5,5,5,5,5,5,5,5,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0},
+ {14,14,14,14,14,14,13,4,4,4,4,2,2,2,2,2,2,2,2,2,1,1,1,1,0,0,0,0,0},
+ {15,15,15,15,15,6,6,13,13,13,13,13,5,5,5,5,5,5,5,5,5,5,1,1,1,0,0,0,0}
+}
+
+function fade(i)
+	for c = 0, 15 do
+		if flr(i+1) >= 30 then
+			pal(c, 0)
+		else
+			pal(c, fadetable[c+1][flr(i+1)])
+		end
+	end
+end
+
 cam = {
 	x = 0,
 	y = 0,
@@ -173,6 +202,29 @@ function make_scene(options)
 			end
 			o.init(self)
 		end,
+		fade_update = function(self)
+			if (self.fade_timer_dx) then
+				fade(flr(self.fade_timer))
+				self.fade_timer += self.fade_timer_dx
+				if (self.fade_timer < 0 or self.fade_timer > (self.fade_max or 30)) then
+					self.fade_timer_dx = false
+					if (self.fade_callback) then
+						self.fade_callback()
+					end
+				end
+			end
+		end,
+		fade_down = function(self, fade_callback)
+			self.fade_timer = 0
+			self.fade_timer_dx = 0.5
+			self.fade_max = 30
+			self.fade_callback = fade_callback
+		end,
+		fade_up = function(self, fade_callback)
+			self.fade_timer = 30
+			self.fade_timer_dx = -0.5
+			self.fade_callback = fade_callback
+		end,
 		add = function(self, object)
 			if (object.init) then
 				object:init()
@@ -195,6 +247,7 @@ function make_scene(options)
 		end,
 		draw = function(self)
 			cls(0)
+			self:fade_update()
 			cam:set()
 			if (o.draw) then
 				o.draw(self)
@@ -210,8 +263,11 @@ function make_scene(options)
 end
 
 function change_scene(scene)
-	scene:init()
-	current_scene = scene
+	current_scene:fade_down(function()
+		scene:init()
+		current_scene = scene
+		scene:fade_up()
+	end)
 end
 
 gravity = 1
@@ -758,6 +814,7 @@ game_scene = make_scene({
 		self:check_to_grow()
 	end,
 	draw = function(self)
+		self:fade_update()
 		palt(0, false)
 		map(0, 0, 0, 0, screen_width / 8, screen_height * 4 / 8)
 		for bg in all(self.needs_background) do
