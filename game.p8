@@ -205,7 +205,7 @@ function make_player(scene)
 		player = 0,
 		x = 40,
 		y = 120,
-		width = 8,
+		width = 3,
 		height = 8,
 		dy = 0,
 		dx = 0,
@@ -237,16 +237,11 @@ function make_player(scene)
 				self.dx = 0
 			end
 
-			local bottom_y = self.y + self.height
 			local ground_y = scene:get_ground(self)
-			-- local ground_y = screen_height
-
-			print(ground_y, 0,0,11)
-			
 
 			-- jumping
 			if (btn(2, self.player)) then
-				if (bottom_y == ground_y) then
+				if (self.y + self.height == ground_y) then
 					self.dy = -0.8
 				-- the longer you push jump the higher you will go
 				elseif (self.dy < 0 and self.dy > -1.3) then
@@ -258,7 +253,7 @@ function make_player(scene)
 				self.dt = 0 -- delta time
 			end
 
-			if (self.dy != 0) then
+			if (self.dy != 0 or self.y + self.height < ground_y) then
 				self.dt += 1
 				self.dy += gravity * (self.dt/frame_rate)
 			end
@@ -278,7 +273,7 @@ function make_player(scene)
 			end
 
 			-- in the air
-			if (bottom_y < ground_y) then
+			if (self.y + self.height < ground_y) then
 				if (self.dx > 0) then
 					self.sprite = self.jumping_right_sprite		
 				elseif (self.dx < 0) then
@@ -297,7 +292,7 @@ function make_player(scene)
 			end
 		end,
 		draw = function(self)
-			spr(self.sprite, self.x, self.y)
+			spr(self.sprite, self.x - 3, self.y)
 		end
 	}
 end
