@@ -90,8 +90,9 @@ cam = {
 	dy = 0,
 	max_x = screen_width,
 	max_y = 0,
+	to_print = '',
 	print = function(self, string)
-		print(string, self.x, self.y)
+		print(string, self.x, self.y, 7)
 	end,
 	set_scene = function(self, scene)
 		self.scene = scene
@@ -238,15 +239,15 @@ function make_scene(options)
 			del(self.objects, object)
 		end,
 		update = function(self)
+			if (o.update) then
+				o.update(self)
+			end
 			for object in all(self.objects) do
 				if (object.update) then
 					object:update()
 				end
 			end
 			cam:update()
-			if (o.update) then
-				o.update(self)
-			end
 		end,
 		draw = function(self)
 			cls(0)
@@ -288,7 +289,7 @@ function make_player(scene)
 		player = 0,
 		x = 40,
 		y = 120,
-		width = 5,
+		width = 4,
 		height = 8,
 		dy = 0,
 		dx = 0,
@@ -301,6 +302,46 @@ function make_player(scene)
 		walk_cycle = {113,114},
 		current_walk_sprite = 1,
 		counter = 1,
+		colliding_bottom = function(self, object)
+			return test_collision(object, {
+				x = self.x,
+				y = self.y,
+				width = self.width,
+				height = self.height + 1
+			})
+		end,
+		colliding_right = function(self, object)
+			return test_collision(object, {
+				x = self.x,
+				y = self.y,
+				width = self.width + 1,
+				height = self.height
+			})
+		end,
+		colliding_left = function(self, object)
+			return test_collision(object, {
+				x = self.x - 1,
+				y = self.y,
+				width = self.width,
+				height = self.height
+			})
+		end,
+		colliding_top = function(self, object)
+			return test_collision(object, {
+				x = self.x,
+				y = self.y - 1,
+				width = self.width,
+				height = self.height 
+			})
+		end,
+		colliding = function(self, object)
+			return {
+				top = self:colliding_top(object),
+				right = self:colliding_right(object),
+				bottom = self:colliding_bottom(object),
+				left = self:colliding_left(object)
+			}
+		end,
 		update = function(self)
 			self.squating = btn(3, self.player)
 			if (btn(0, self.player)) then
@@ -322,11 +363,31 @@ function make_player(scene)
 				self.dx = 0
 			end
 
+			local collision_x = scene:check_block_collision({
+				x = self.x + self.dx,
+				y = self.y,
+				width = self.width,
+				height = self.height
+			})
+
+			if (collision_x) then
+				self.dx = 0
+				-- sfx(2)
+			else
+				self.x += self.dx
+			end			
+
+			if (self.x < 0) then
+				self.x = 0
+			elseif (self.x + self.width > scene.width) then
+				self.x = scene.width - self.width
+			end			
+
 			local ground_y = scene:get_ground(self)
 
 			-- jumping
-			if (btn(4, self.player)) then
-				if (self.y + self.height == ground_y) then
+			if (btn(4, self.player) or btn(2, self.player)) then
+				if (self.dy == 0) then
 					sfx(2)
 					self.dy = -0.8
 				-- the longer you push jump the higher you will go
@@ -340,21 +401,8 @@ function make_player(scene)
 				self.dt += 1
 				self.dy += gravity * (self.dt/frame_rate)
 			end
-
-			local collision_x = scene:check_block_collision({
-				x = self.x + self.dx,
-				y = self.y,
-				width = self.width,
-				height = self.height
-			})
-
-			if (collision_x) then
-				self.dx = 0
-				-- sfx(2)
-			else
-				self.x += self.dx
-			end
-
+			
+			-- going up
 			if (self.dy < 0) then
 				local desired_y = flr(self.y + self.dy)
 				local collision_y = scene:check_block_collision({
@@ -377,12 +425,6 @@ function make_player(scene)
 			if (self.y + self.height == ground_y) then
 				self.dy = 0
 				self.dt = 0
-			end
-
-			if (self.x < 0) then
-				self.x = 0
-			elseif (self.x + self.width > scene.width) then
-				self.x = scene.width - self.width
 			end
 
 			-- in the air
@@ -412,7 +454,7 @@ function make_player(scene)
 			end
 		end,
 		draw = function(self)
-			spr(self.sprite, self.x, self.y, 1, 1, self.flip_sprite)
+			spr(self.sprite, self.x - 1, self.y, 1, 1, self.flip_sprite)
 		end,
 		get_next_walk_sprite = function(self)
 			self.counter += 1
@@ -661,37 +703,62 @@ function make_platform(x, y, w, h, directions, color_swatch)
 		toggle_growth = function(self, toggle)
 			self.should_grow = toggle
 		end,
+		touching_player = function(self, player)
+			self.player = player
+		end,
 		grow = function(self)
 			local grow_up = self.directions.up
 			local grow_down = self.directions.down
 			local grow_left = self.directions.left
 			local grow_right = self.directions.right
 
+			local d_height = 0
+			local d_width = 0
+			local dx = 0
+			local dy = 0
+
 			-- up and down directions
 			if (grow_up or grow_down) then
-				self.height += self.grow_delta
+				d_height = self.grow_delta
+				self.height += d_height
 
 				self:make_sliver("left")
 				self:make_sliver("right")
 			end
 			if (grow_up and grow_down) then
-				self.y -= self.grow_delta / 2
+				dy = self.grow_delta / 2
 			elseif (grow_up) then
-				self.y -= self.grow_delta
+				dy = self.grow_delta
 			end
+			self.y -= dy
 
 			-- left and right directions
 			if (grow_left or grow_right) then
-				self.width += self.grow_delta
+				d_width = self.grow_delta
+				self.width += d_width
 
 				self:make_sliver("top")
 				self:make_sliver("bottom")
 			end
 			if (grow_left and grow_right) then
-				self.x -= self.grow_delta / 2
+				dx = self.grow_delta / 2
 			elseif (grow_left) then
-				self.x -= self.grow_delta
+				dx = self.grow_delta
 			end
+			self.x -= dx
+
+			if (self.player) then
+				local colliding = self.player:colliding(self)
+				if (colliding.bottom and grow_up) then
+					self.player.y -= dy
+				elseif (colliding.left and grow_right) then
+					self.player.x += dx
+				elseif (colliding.right and grow_left) then
+					self.player.x -= dx
+				elseif (colliding.top and grow_down) then
+					self.player.y += dy					
+				end
+			end			
 		end
 	}
 end
@@ -744,9 +811,9 @@ function make_game_scene(level)
 			for block in all(self.blocks) do
 				if (not ground and test_collision(block, {
 					x = player.x,
-					y = player.y + 2,
+					y = player.y + player.height,
 					width = player.width,
-					height = player.height
+					height = 3
 				})) then
 					ground = block.y
 				end
@@ -770,6 +837,7 @@ function make_game_scene(level)
 					height = player.height + 2
 				})
 				platform:toggle_growth(is_touching)
+				platform:touching_player(is_touching and player or nil)
 			end
 		end,
 		form_platform = function(self, map_x, map_y)
@@ -847,9 +915,6 @@ function make_game_scene(level)
 				change_scene(winning_scene)
 			end
 		end,
-		check_for_death = function(self)
-
-		end,
 		init = function(self)
 			self.blocks = {}
 			self.platforms = {}
@@ -888,7 +953,6 @@ function make_game_scene(level)
 			end
 
 			cam.y = self.height - screen_height
-
 			cam:follow(self.player, 20)
 			self:add(self.player)
 		end,
