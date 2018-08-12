@@ -332,7 +332,7 @@ function make_player(scene)
 				x = self.x,
 				y = self.y - (offset or 1),
 				width = self.width,
-				height = self.height 
+				height = self.height
 			})
 		end,
 		colliding = function(self, object)
@@ -380,13 +380,13 @@ function make_player(scene)
 				-- sfx(2)
 			else
 				self.x += self.dx
-			end			
+			end
 
 			if (self.x < 0) then
 				self.x = 0
 			elseif (self.x + self.width > scene.width) then
 				self.x = scene.width - self.width
-			end			
+			end
 
 			local ground_y = scene:get_ground(self)
 
@@ -406,7 +406,7 @@ function make_player(scene)
 				self.dt += 1
 				self.dy += gravity * (self.dt/frame_rate)
 			end
-			
+
 			-- going up
 			if (self.dy < 0) then
 				local desired_y = flr(self.y + self.dy)
@@ -478,6 +478,7 @@ end
 
 function make_explosion(scene, x, y)
 	cam:shake()
+	sfx(12)
 	local make_particle = function(x, y)
 		local particle_colors = { 6, 7, 9, 10 }
 		local particle = {
@@ -761,9 +762,9 @@ function make_platform(x, y, w, h, directions, color_swatch)
 				elseif (colliding.right and grow_left) then
 					self.player.x -= dx
 				elseif (colliding.top and grow_down) then
-					self.player.y += dy					
+					self.player.y += dy
 				end
-			end			
+			end
 		end
 	}
 end
@@ -846,7 +847,7 @@ function make_game_scene(level)
 				self.is_touching = is_touching
 			end
 		end,
-		check_for_death = function(self)			
+		check_for_death = function(self)
 			local is_top = false
 			local is_right = false
 			local is_bottom = false
@@ -885,8 +886,7 @@ function make_game_scene(level)
 			end
 		end,
 		kill_player = function(self)
-			make_explosion(self, self.player.x, self.player.y)
-			self:reset_level()		
+			self.player:destroy()
 		end,
 		form_platform = function(self, map_x, map_y)
 			function is_behavior(tile_id)
@@ -1326,6 +1326,8 @@ __sfx__
 001000000f05000000190500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 011000002405500000240550000024055000002405500000240550000024055240552405524055240550000030055000003005500000300550000030055000003005500000300553005530055300553005500000
 011000002705500000270550000027055000002705500000270550000027055270552705527055270550000033055000003305500000330550000033055000003305500000330553305533055330553305500000
+01080000226531f6501d6401b63019620166101361005603006030060300603006030060300603006030060300603006030060300603006030060300603006030060300603006030060300603006030060300603
+010800002265319620166101361005603006030060300603006030060300603006030060300603006030060300603006030060300603006030060300603006030060300603006030060300603000000000000000
 __music__
 01 04064344
 02 05064344
