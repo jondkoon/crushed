@@ -90,6 +90,9 @@ cam = {
 	dy = 0,
 	max_x = screen_width,
 	max_y = 0,
+	print = function(self, string)
+		print(string, self.x, self.y)
+	end,
 	set_scene = function(self, scene)
 		self.scene = scene
 		self.min_x = 0
@@ -692,7 +695,7 @@ function make_chalice(x,y)
 	}
 end
 
-function make_game_scene()
+function make_game_scene(level)
 	return make_scene({
 		height = screen_height * 4,
 		width = screen_width,
@@ -784,7 +787,7 @@ function make_game_scene()
 						if (not behavior and is_behavior(tile_id)) then
 							behavior = tile_id
 						end
-						self:paint_background(map_x*tile_size, map_y*tile_size)
+						self:paint_background(map_x*tile_size - self.level_x_offset, map_y*tile_size)
 						visit_adjacent(map_x, map_y)
 					end
 				end
@@ -802,11 +805,11 @@ function make_game_scene()
 			local down = fget(behavior, 2)
 			local left = fget(behavior, 3)
 
-			local platform = make_platform(x,y,width,height,{ up = up, down = down, right = right, left = left }, tile_id)
+			local platform = make_platform(x - self.level_x_offset,y,width,height,{ up = up, down = down, right = right, left = left }, tile_id)
 			return platform
 		end,
 		check_for_win = function(self)
-			if (test_collision(self.player, self.chalice)) then
+			if (self.chalice and test_collision(self.player, self.chalice)) then
 				change_scene(winning_scene)
 			end
 		end,
@@ -820,21 +823,22 @@ function make_game_scene()
 			local level_height = screen_height * 4
 
 			self.player = make_player(self)
-			for x = 0, level_width, tile_size do
+			self.level_x_offset = level * level_width
+			for x = self.level_x_offset, (self.level_x_offset + level_width), tile_size do
 				for y = 0, level_height, tile_size do
 					local map_x = x / tile_size
 					local map_y = y / tile_size
 					local tile_id = mget(map_x, map_y)
 					if (fget(tile_id, 7)) then
-						local block = make_block(tile_id, x, y)
+						local block = make_block(tile_id, x - self.level_x_offset, y)
 						self:add(block)
 						add(self.blocks, block)
 					elseif (tile_id == 86) then
-						self.player.x = x + 2
+						self.player.x = x + 2 - self.level_x_offset
 						self.player.y = y
 						self.player.dy = 1 -- falling
 					elseif (tile_id == 71) then
-						self.chalice = make_chalice(x,y)
+						self.chalice = make_chalice(x - self.level_x_offset,y)
 					else
 						local platform = self:form_platform(map_x, map_y)
 						if (platform) then
@@ -858,7 +862,7 @@ function make_game_scene()
 		draw = function(self)
 			self:fade_update()
 			palt(0, false)
-			map(0, 0, 0, 0, screen_width / 8, screen_height * 4 / 8)
+			map(self.level_x_offset / tile_size, 0, 0, 0, self.width / tile_size, self.height / tile_size)
 			for bg in all(self.needs_background) do
 				spr(self.background_tile, bg.x, bg.y)
 			end
@@ -914,7 +918,7 @@ make_start_prompt = function(y,text)
 				self.timer = 60
 			end
 			if (btn(4) or btn(5)) then
-				change_scene(make_game_scene())
+				change_scene(make_game_scene(0))
 			end
 		end,
 		draw = function(self)
@@ -967,7 +971,7 @@ winning_scene = make_scene({
 })
 
 current_scene = title_scene
--- current_scene = make_game_scene()
+-- current_scene = make_game_scene(1)
 -- current_scene = winning_scene
 
 function _init()
