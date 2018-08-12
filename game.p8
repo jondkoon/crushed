@@ -1077,7 +1077,7 @@ make_start_prompt = function(y,text)
 		height = 4,
 		init = function(self)
 			self.text = text or "press ❎ or 🅾️ to start"
-			self.width = (#self.text) * 4 + 4
+			self.width = (#self.text) * 4 + 8
 			self.x = (screen_width - self.width) / 2
 			self.timer = 60
 		end,
