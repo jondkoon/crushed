@@ -695,6 +695,20 @@ function make_chalice(x,y)
 	}
 end
 
+function make_door(x,y,current_level,player)
+	return {
+		x = x,
+		y = y,
+		width = 16,
+		height = 16,
+		update = function(self)
+			if (test_collision(self, player)) then
+				change_scene(make_game_scene(current_level+1))
+			end
+		end
+	}	
+end
+
 function make_game_scene(level)
 	return make_scene({
 		height = screen_height * 4,
@@ -833,6 +847,9 @@ function make_game_scene(level)
 						local block = make_block(tile_id, x - self.level_x_offset, y)
 						self:add(block)
 						add(self.blocks, block)
+					elseif (tile_id == 68) then
+						local door = make_door(x - self.level_x_offset, y, level, self.player)
+						self:add(door)
 					elseif (tile_id == 86) then
 						self.player.x = x + 2 - self.level_x_offset
 						self.player.y = y
