@@ -303,34 +303,34 @@ function make_player(scene)
 		walk_cycle = {113,114},
 		current_walk_sprite = 1,
 		counter = 1,
-		colliding_bottom = function(self, object)
+		colliding_bottom = function(self, object, offset)
 			return test_collision(object, {
 				x = self.x,
 				y = self.y,
 				width = self.width,
-				height = self.height + 1
+				height = self.height + (offset or 1)
 			})
 		end,
-		colliding_right = function(self, object)
+		colliding_right = function(self, object, offset)
 			return test_collision(object, {
 				x = self.x,
 				y = self.y,
-				width = self.width + 1,
+				width = self.width + (offset or 1),
 				height = self.height
 			})
 		end,
-		colliding_left = function(self, object)
+		colliding_left = function(self, object, offset)
 			return test_collision(object, {
-				x = self.x - 1,
+				x = self.x - (offset or 1),
 				y = self.y,
 				width = self.width,
 				height = self.height
 			})
 		end,
-		colliding_top = function(self, object)
+		colliding_top = function(self, object, offset)
 			return test_collision(object, {
 				x = self.x,
-				y = self.y - 1,
+				y = self.y - (offset or 1),
 				width = self.width,
 				height = self.height 
 			})
@@ -843,7 +843,50 @@ function make_game_scene(level)
 				})
 				platform:toggle_growth(is_touching)
 				platform:touching_player(is_touching and player or nil)
+				self.is_touching = is_touching
 			end
+		end,
+		check_for_death = function(self)			
+			local is_top = false
+			local is_right = false
+			local is_bottom = false
+			local is_left = false
+			for block in all(self.blocks) do
+				if (test_collision(block, self.player)) then
+					if (not is_left and self.player:colliding_left(block, 0)) then
+						is_left = true
+					end
+					if (not is_right and self.player:colliding_right(block, 0)) then
+						is_right = true
+					end
+					if (not is_top and self.player:colliding_top(block, 0)) then
+						is_top = true
+					end
+					if (not is_bottom and self.player:colliding_bottom(block, 0)) then
+						is_bottom = true
+					end
+				end
+			end
+
+			-- function s(c, bool)
+			-- 	return bool and c..':T ' or c..':F '
+			-- end
+
+			-- cam.to_print = s('T',is_top)..s('R',is_right)..s('B',is_bottom)..s('L',is_left)
+
+			if ((is_left and is_right) or (is_top and is_bottom)) then
+				if (self.death_last_frame) then
+					-- only kill player if squashed for 2 frames
+					self:kill_player()
+				end
+				self.death_last_frame = true
+			else
+				self.death_last_frame = false
+			end
+		end,
+		kill_player = function(self)
+			make_explosion(self, self.player.x, self.player.y)
+			self:reset_level()		
 		end,
 		form_platform = function(self, map_x, map_y)
 			function is_behavior(tile_id)
@@ -968,6 +1011,7 @@ function make_game_scene(level)
 		end,
 		update = function(self)
 			self:check_to_grow()
+			self:check_for_death()
 			self:check_for_win()
 		end,
 		draw = function(self)
@@ -978,6 +1022,7 @@ function make_game_scene(level)
 				spr(self.background_tile, bg.x, bg.y)
 			end
 			palt(0, true)
+			cam:print(cam.to_print)
 		end,
 	})
 end
