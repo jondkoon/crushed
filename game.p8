@@ -272,6 +272,7 @@ function change_scene(scene)
 		return
 	end
 	changing_scene = true
+	menuitem(1) -- remove reset level
 	current_scene:fade_down(function()
 		scene:init()
 		current_scene = scene
@@ -915,7 +916,12 @@ function make_game_scene(level)
 				change_scene(winning_scene)
 			end
 		end,
+		reset_level = function(self)
+			change_scene(make_game_scene(level))
+		end,
 		init = function(self)
+			menuitem(1, "restart level", self.reset_level)
+
 			self.blocks = {}
 			self.platforms = {}
 			local level_width = screen_width
