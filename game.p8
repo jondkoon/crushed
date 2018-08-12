@@ -343,6 +343,10 @@ function make_player(scene)
 				left = self:colliding_left(object)
 			}
 		end,
+		destroy = function(self)
+			make_explosion(scene, self.x, self.y)
+			scene:reset_level()
+		end,
 		update = function(self)
 			self.squating = btn(3, self.player)
 			if (btn(0, self.player)) then
