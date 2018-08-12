@@ -869,10 +869,10 @@ function make_game_scene(level)
 			end
 
 			-- function s(c, bool)
-			-- 	return bool and c..':T ' or c..':F '
+			-- 	return bool and c..':t ' or c..':f '
 			-- end
 
-			-- cam.to_print = s('T',is_top)..s('R',is_right)..s('B',is_bottom)..s('L',is_left)
+			-- cam.to_print = s('t',is_top)..s('r',is_right)..s('b',is_bottom)..s('l',is_left)
 
 			if ((is_left and is_right) or (is_top and is_bottom)) then
 				if (self.death_last_frame) then
