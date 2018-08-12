@@ -535,8 +535,6 @@ function make_platform(x, y, w, h, directions, color_swatch)
 			self:draw_slivers()
 			self:draw_corners()
 
-			print((ceil((self.color_swatch + 1) / 16) - 1) * 8, self.x - 10, self.y)
-
 			pal(3, 3)
 			pal(11, 11)
 		end,
