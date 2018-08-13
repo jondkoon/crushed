@@ -465,7 +465,7 @@ function make_player(scene)
 			end
 		end,
 		draw = function(self)
-			spr(self.sprite, self.x - 1, self.y, 1, 1, self.flip_sprite)
+			spr(self.sprite, self.x - 1, self.y - 1, 1, 1, self.flip_sprite)
 		end,
 		get_next_walk_sprite = function(self)
 			self.counter += 1
