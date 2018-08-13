@@ -8,6 +8,7 @@ screen_height = 128
 half_screen_height = screen_height / 2
 frame_rate = 60
 sound_on = true
+profiler_on = false
 stop = false
 _sfx = sfx
 function sfx(id)
@@ -926,7 +927,6 @@ function make_game_scene(level)
 				return is_behavior(tile_id) or is_appearance(tile_id)
 			end
 
-			self.visited = self.visited or {}
 			local tile_id = mget(map_x,map_y)
 			if(not is_platform(tile_id) or self.visited[map_x..','..map_y]) then
 				return
@@ -989,11 +989,13 @@ function make_game_scene(level)
 			end
 		end,
 		reset_level = function(self)
-			change_scene(make_game_scene(level))
+			change_scene(self)
 		end,
 		init = function(self)
-			menuitem(1, "restart level", self.reset_level)
-
+			menuitem(1, "restart level", function()
+				self:reset_level()
+			end)
+			self.visited = {}
 			self.blocks = {}
 			self.platforms = {}
 			local level_width = screen_width
@@ -1229,6 +1231,11 @@ function _draw()
 	end
 
 	current_scene:draw()
+	if (profiler_on) then
+		camera()
+		print('mem: '..stat(0), 0, 0)
+		print('cpu: '..stat(1), 0, 8)
+	end
 end
 __gfx__
 000000000000033333333333003333330003333333333333333333333bbbb6bb3bbbbbbb003333330033330000333300333333003b7bbbbb0000000000000000
