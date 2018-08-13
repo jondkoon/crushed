@@ -798,6 +798,7 @@ end
 local next_level_map = {
 	1,
 	3,
+	2,
 	2
 }
 
@@ -808,7 +809,8 @@ function make_door(x,y,current_level,player)
 		width = 16,
 		height = 16,
 		update = function(self)
-			if (test_collision(self, player)) then
+			if (not self.triggered and test_collision(self, player)) then
+				self.triggered = true
 				local next_level = next_level_map[current_level + 1]
 				change_scene(make_game_scene(next_level))
 			end
@@ -1201,7 +1203,7 @@ winning_scene = make_scene({
 })
 
 current_scene = title_scene
--- current_scene = make_game_scene(2)
+-- current_scene = make_game_scene(3)
 -- current_scene = winning_scene
 
 function _init()
