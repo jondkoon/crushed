@@ -465,7 +465,7 @@ function make_player(scene)
 			end
 		end,
 		draw = function(self)
-			spr(self.sprite, self.x - 1, self.y, 1, 1, self.flip_sprite)
+			spr(self.sprite, self.x - 1, self.y - 1, 1, 1, self.flip_sprite)
 		end,
 		get_next_walk_sprite = function(self)
 			self.counter += 1
@@ -1146,8 +1146,8 @@ winning_scene = make_scene({
 	end
 })
 
--- current_scene = title_scene
-current_scene = make_game_scene(3)
+current_scene = title_scene
+-- current_scene = make_game_scene(3)
 -- current_scene = winning_scene
 
 function _init()
