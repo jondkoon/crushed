@@ -848,7 +848,7 @@ function make_game_scene(level)
 					return true
 				end
 			end
-		end,		
+		end,
 		check_block_collision = function(self, player)
 			for k, block in pairs(self.blocks) do
 				if (test_collision(block, player)) then
@@ -1174,6 +1174,7 @@ title_scene = make_scene({
 		self:add(make_start_prompt(74))
 		self.sprite_x = self.platform.x + self.platform.width
 		self.sprite_y = self.platform.y + self.platform.height - 8
+		self.show_title = false
 	end
 })
 
