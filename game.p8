@@ -987,6 +987,7 @@ function make_game_scene(level)
 			menuitem(1, "restart level", function()
 				self:reset_level()
 			end)
+			self.is_dying = false
 			self.visited = {}
 			self.blocks = {}
 			self.platforms = {}
