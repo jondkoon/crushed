@@ -864,7 +864,7 @@ function make_game_scene(level)
 					height = player.height + 2
 				})
 
-				local enable_grow = is_touching and not self:check_stone_block_collision(platform)
+				local enable_grow = is_touching
 				platform:toggle_growth(enable_grow)
 				platform:touching_player(is_touching and player or nil)
 			end
