@@ -1108,12 +1108,50 @@ title_scene = make_scene({
 	height = screen_height,
 	width = screen_width,
 	music = 10,
+	border_buffer = 9,
+	show_title = false,
+	walk_cycle = {113,114},
+	counter = 1,
+	current_walk_sprite = 1,
+	get_next_walk_sprite = function(self)
+		self.counter += 1
+		if (self.counter % 5 == 0) then
+			self.current_walk_sprite += 1
+			if (self.current_walk_sprite > #self.walk_cycle) then
+				self.current_walk_sprite = 1
+			end
+		end
+		return self.walk_cycle[self.current_walk_sprite]
+	end,
+	update = function(self)
+		if self.platform.width == screen_width - (self.border_buffer * 2) then
+			self.platform:toggle_growth(false)
+			self.show_title = true
+		end
+
+		self.platform:update()
+		self.sprite_x += 1
+	end,
 	draw = function(self)
 		cls(1)
+		self.platform:draw()
+		spr(self:get_next_walk_sprite(), self.sprite_x, self.sprite_y)
+		if self.show_title then
+			local text = "crushed"
+			local width = (#text) * 4
+			local x = (screen_width - width) / 2
+			local y = self.platform.y + (self.platform.height / 2) - 2
+			print("crushed", x, y, 7)
+		end
 	end,
 	init = function(self)
+		self.platform = make_platform(self.border_buffer, 20, 16, 40, {up=false,down=false,left=false,right=true}, 48)
+		self.platform:init()
+		self.platform:toggle_growth(true)
 		self:add(title_screen_text)
-		self:add(make_start_prompt(64))
+		self:add(make_start_prompt(74))
+		self.sprite_x = self.platform.x + self.platform.width
+		self.sprite_y = self.platform.y + self.platform.height - 8
 	end
 })
 
@@ -1146,8 +1184,8 @@ winning_scene = make_scene({
 	end
 })
 
--- current_scene = title_scene
-current_scene = make_game_scene(3)
+current_scene = title_scene
+-- current_scene = make_game_scene(3)
 -- current_scene = winning_scene
 
 function _init()
