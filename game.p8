@@ -424,7 +424,13 @@ function make_player(scene)
 					-- sfx(2)
 				end
 			else
-				self.y = flr(min(ground_y - self.height, self.y + self.dy))
+				local player_ground_y = ground_y - self.height
+				local desired_y = self.y + self.dy
+				if (self.dy > 0 and desired_y > player_ground_y) then
+					self.y = player_ground_y
+				else
+					self.y = desired_y
+				end
 			end
 
 			if (self.y + self.height == ground_y) then
