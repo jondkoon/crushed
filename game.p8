@@ -779,7 +779,6 @@ end
 tile_size = 8
 function make_block(tile_id, x, y)
 	return {
-		is_stone = true,
 		x = x,
 		y = y,
 		width = tile_size,
@@ -842,13 +841,6 @@ function make_game_scene(level)
 				end
 			end
 			return ground or self.height
-		end,
-		check_stone_block_collision = function(self, player)
-			for k, block in pairs(self.blocks) do
-				if (block.is_stone and test_collision(block, player)) then
-					return true
-				end
-			end
 		end,
 		check_block_collision = function(self, player)
 			for k, block in pairs(self.blocks) do
