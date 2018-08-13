@@ -1078,7 +1078,7 @@ local title_screen_text = {
 		local texts = {
 			jon = {text="jon koon",x,y},
 			rusty = {text="rusty bailey",x,y},
-			ld42 = {text="ludum dare 42",x,y}
+			ld42 = {text="ldjam42",x,y}
 		}
 
 		texts.rusty.x = self.border_buffer
