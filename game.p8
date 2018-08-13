@@ -1052,16 +1052,28 @@ function checker_board(scene)
 	end
 end
 
-local title = {
-	y = 40,
-	height = 4,
-	init = function(self)
-		self.text = "crushed"
-		self.width = (#self.text) * 4
-		self.x = (screen_width - self.width) / 2
-	end,
+local title_screen_text = {
+	letter_width = 4,
+	letter_height = 6,
+	border_buffer = 6,
 	draw = function(self)
-		print(self.text, self.x, self.y, 7)
+		local texts = {
+			jon = {text="jon koon",x,y},
+			rusty = {text="rusty bailey",x,y},
+			ld42 = {text="ludum dare 42",x,y}
+		}
+
+		texts.rusty.x = self.border_buffer
+		texts.rusty.y = screen_height - self.letter_height - self.border_buffer
+		texts.jon.x = texts.rusty.x
+		texts.jon.y = texts.rusty.y - self.letter_height
+
+		texts.ld42.x = screen_width - (#texts.ld42.text * self.letter_width) - self.border_buffer
+		texts.ld42.y = texts.rusty.y
+
+		for key, value in pairs(texts) do
+			print(texts[key].text, texts[key].x, texts[key].y, 7)
+		end
 	end
 }
 
@@ -1071,7 +1083,7 @@ make_start_prompt = function(y,text)
 		height = 4,
 		init = function(self)
 			self.text = text or "press ❎ or 🅾️ to start"
-			self.width = (#self.text) * 4 + 4
+			self.width = (#self.text) * 4 + 8
 			self.x = (screen_width - self.width) / 2
 			self.timer = 60
 		end,
@@ -1100,8 +1112,8 @@ title_scene = make_scene({
 		cls(1)
 	end,
 	init = function(self)
-		self:add(title)
-		self:add(make_start_prompt(title.y + title.height + 20))
+		self:add(title_screen_text)
+		self:add(make_start_prompt(64))
 	end
 })
 
