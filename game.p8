@@ -242,7 +242,7 @@ function make_scene(options)
 			if (o.update) then
 				o.update(self)
 			end
-			for object in all(self.objects) do
+			for k, object in pairs(self.objects) do
 				if (object.update) then
 					object:update()
 				end
@@ -256,7 +256,7 @@ function make_scene(options)
 			if (o.draw) then
 				o.draw(self)
 			end
-			for object in all(self.objects) do
+			for k, object in pairs(self.objects) do
 				if (object.draw) then
 					object:draw()
 				end
@@ -830,7 +830,7 @@ function make_game_scene(level)
 		end,
 		get_ground = function(self, player)
 			local ground
-			for block in all(self.blocks) do
+			for k, block in pairs(self.blocks) do
 				if (not ground and test_collision(block, {
 					x = player.x,
 					y = player.y + player.height,
@@ -843,21 +843,21 @@ function make_game_scene(level)
 			return ground or self.height
 		end,
 		check_stone_block_collision = function(self, player)
-			for block in all(self.blocks) do
+			for k, block in pairs(self.blocks) do
 				if (block.is_stone and test_collision(block, player)) then
 					return true
 				end
 			end
 		end,		
 		check_block_collision = function(self, player)
-			for block in all(self.blocks) do
+			for k, block in pairs(self.blocks) do
 				if (test_collision(block, player)) then
 					return true
 				end
 			end
 		end,
 		check_to_grow = function(self)
-			for platform in all(self.platforms) do
+			for k, platform in pairs(self.platforms) do
 				local player = self.player
 				local is_touching = test_collision(platform, {
 					x = player.x - 1,
@@ -876,7 +876,7 @@ function make_game_scene(level)
 			local is_right = false
 			local is_bottom = false
 			local is_left = false
-			for block in all(self.blocks) do
+			for k, block in pairs(self.blocks) do
 				if (test_collision(block, self.player)) then
 					if (not is_left and self.player:colliding_left(block, 0)) then
 						is_left = true
@@ -1043,7 +1043,7 @@ function make_game_scene(level)
 			self:fade_update()
 			palt(0, false)
 			map(self.level_x_offset / tile_size, 0, 0, 0, self.width / tile_size, self.height / tile_size)
-			for bg in all(self.needs_background) do
+			for k, bg in pairs(self.needs_background) do
 				spr(self.background_tile, bg.x, bg.y)
 			end
 			palt(0, true)
