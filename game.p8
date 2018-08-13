@@ -795,6 +795,12 @@ function make_chalice(x,y)
 	}
 end
 
+local next_level_map = {
+	1,
+	3,
+	2
+}
+
 function make_door(x,y,current_level,player)
 	return {
 		x = x,
@@ -803,7 +809,8 @@ function make_door(x,y,current_level,player)
 		height = 16,
 		update = function(self)
 			if (test_collision(self, player)) then
-				change_scene(make_game_scene(current_level+1))
+				local next_level = next_level_map[current_level + 1]
+				change_scene(make_game_scene(next_level))
 			end
 		end
 	}
