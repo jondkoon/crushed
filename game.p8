@@ -1095,7 +1095,7 @@ local title_screen_text = {
 	end
 }
 
-make_start_prompt = function(y,text)
+make_start_prompt = function(y,text,scene)
 	return {
 		y = y,
 		height = 4,
@@ -1111,7 +1111,11 @@ make_start_prompt = function(y,text)
 				self.timer = 60
 			end
 			if (btn(4) or btn(5)) then
-				change_scene(make_game_scene(0))
+				if (scene) then
+					change_scene(scene)
+				else
+					change_scene(make_game_scene(0))
+				end
 			end
 		end,
 		draw = function(self)
@@ -1198,7 +1202,7 @@ winning_scene = make_scene({
 	end,
 	init = function(self)
 		self:add(you_won)
-		self:add(make_start_prompt(70, "press ❎ or 🅾️ to play again"))
+		self:add(make_start_prompt(70, "press ❎ or 🅾️ to play again", title_scene))
 	end
 })
 
