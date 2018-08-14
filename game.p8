@@ -1288,8 +1288,8 @@ function _draw()
 	if (profiler_on) then
 		camera()
 
-		print('mem: '..stat(0), 0, 0, 7)
-		print('cpu: '..stat(1), 0, 8, 7)
+		print('mem: '.. flr(stat(0)), 0, 0, 7)
+		print('cpu: '.. (flr(stat(1) * 100)) .. '%', 0, 8, 7)
 		if (profile_a) then
 			print('a: '..profile_a, 0, 16, 7)
 		end
