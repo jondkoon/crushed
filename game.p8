@@ -8,7 +8,8 @@ screen_height = 128
 half_screen_height = screen_height / 2
 frame_rate = 60
 sound_on = true
-profiler_on = false
+profiler_on = true
+profile_a = nil
 stop = false
 _sfx = sfx
 function sfx(id)
@@ -243,18 +244,22 @@ function make_scene(options)
 			if (o.update) then
 				o.update(self)
 			end
+			
 			for k, object in pairs(self.objects) do
 				if (object.update) then
 					object:update()
 				end
 			end
+			
 			cam:update()
 		end,
 		draw = function(self)
 			cls(0)
 			self:fade_update()
 			cam:set()
-			if (o.draw) then
+			-- if the object has an x coordinate make sure it is on the screen
+			-- otherwise let it draw
+			if (o.draw and (not o.x or cam:in_view(o))) then
 				o.draw(self)
 			end
 			for k, object in pairs(self.objects) do
@@ -1033,6 +1038,7 @@ function make_game_scene(level)
 			self:check_to_grow()
 			self:check_for_death()
 			self:check_for_win()
+			
 		end,
 		draw = function(self)
 			self:fade_update()
@@ -1214,20 +1220,23 @@ function _update60()
 	if (stop) then
 		return
 	end
-
+	
 	current_scene:update()
+	
 end
 
 function _draw()
 	if (stop) then
 		return
 	end
-
 	current_scene:draw()
 	if (profiler_on) then
 		camera()
 		print('mem: '..stat(0), 0, 0)
 		print('cpu: '..stat(1), 0, 8)
+		if (profile_a) then
+			print('a: '..profile_a, 0, 16)
+		end
 	end
 end
 __gfx__
