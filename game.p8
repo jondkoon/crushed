@@ -8,7 +8,7 @@ screen_height = 128
 half_screen_height = screen_height / 2
 frame_rate = 60
 sound_on = true
-profiler_on = false
+profiler_on = true
 stop = false
 _sfx = sfx
 function sfx(id)
@@ -584,6 +584,10 @@ function make_platform(x, y, w, h, directions, color_swatch)
 				end
 			end
 
+			-- init sliver positions
+			self:calculate_sliver_positions()
+
+			-- set the color template
 			local sprite_x = (self.color_swatch % 16) * 8
 			local sprite_y = (ceil((self.color_swatch + 1) / 16) - 1) * 8
 			self.border_color = sget(sprite_x, sprite_y)
@@ -597,7 +601,10 @@ function make_platform(x, y, w, h, directions, color_swatch)
 				end
 
 				if self.should_grow then
+					-- grows bounding box and adds new sliver to each side
+					-- todo: separate this into two functions: grow bounding box and add slivers; wrap all three functions in a grow function
 					self:grow()
+					self:calculate_sliver_positions()
 				end
 			end
 		end,
@@ -607,8 +614,8 @@ function make_platform(x, y, w, h, directions, color_swatch)
 
 			local center_x0 = self.x+self.corner_size
 			local center_y0 = self.y+self.corner_size
-			local center_x1 = center_x0 + self.width - (self.corner_size * 2)
-			local center_y1 = center_y0 + self.height - (self.corner_size * 2)
+			local center_x1 = center_x0 + self.width - (self.corner_size * 2) - 1
+			local center_y1 = center_y0 + self.height - (self.corner_size * 2) - 1
 			rectfill(center_x0, center_y0, center_x1, center_y1, 11)
 
 			self:draw_slivers()
@@ -621,7 +628,7 @@ function make_platform(x, y, w, h, directions, color_swatch)
 			local draw_order = {'bottom', 'left', 'top', 'right'}
 			for i, side in pairs(draw_order) do
 				for j = 1, #self.slivers[side] do
-					self:draw_sliver(side, j, self.slivers[side][j])
+					self:draw_sliver(self.slivers[side][j])
 				end
 			end
 		end,
@@ -682,37 +689,86 @@ function make_platform(x, y, w, h, directions, color_swatch)
 		get_random_sliver = function(self, side)
 			local collection = self.available_slivers[side]
 			local random_sliver_index = flr(rnd(#collection)) + 1
-			return collection[random_sliver_index]
+
+			local sliver = {
+				sx = collection[random_sliver_index][1],
+				sy = collection[random_sliver_index][2]
+			}
+
+			if (side == "top") then
+				sliver.sw = self.sliver_width
+				sliver.sh = self.sliver_height
+				sliver.flip_x = false
+				sliver.flip_y = false
+			end
+
+			if (side == "bottom") then
+				sliver.sw = self.sliver_width
+				sliver.sh = self.sliver_height
+				sliver.flip_x = false
+				sliver.flip_y = true
+			end
+
+			if (side == "left") then
+				sliver.sw = self.sliver_height
+				sliver.sh = self.sliver_width
+				sliver.flip_x = false
+				sliver.flip_y = false
+			end
+
+			if (side == "right") then
+				sliver.sw = self.sliver_height
+				sliver.sh = self.sliver_width
+				sliver.flip_x = true
+				sliver.flip_y = false
+			end
+
+			return sliver
 		end,
 		make_sliver = function(self, side)
 			add(self.slivers[side], self:get_random_sliver(side))
 		end,
-		draw_sliver = function(self, side, i, sliver)
-			local spr_x = sliver[1]
-			local spr_y = sliver[2]
-
+		calculate_sliver_positions = function(self)
+			for side, collection in pairs(self.slivers) do
+				for j = 1, #collection do
+					self:calculate_sliver_position(side, j)
+				end
+			end
+		end,
+		calculate_sliver_position = function(self, side, j)
 			if (side == "top") then
-				local x = self.x + self.corner_size + (self.grow_delta * (i - 1))
-				sspr(spr_x, spr_y, self.sliver_width, self.sliver_height, x, self.y, self.sliver_width, self.sliver_height)
+				self.slivers[side][j].dx = self.x + self.corner_size + (self.grow_delta * (j - 1))
+				self.slivers[side][j].dy = self.y
 			end
 
 			if (side == "bottom") then
-				local x = self.x + self.corner_size + (self.grow_delta * (i - 1))
-				local y = self.y + self.height - self.sliver_height
-				sspr(spr_x, spr_y, self.sliver_width, self.sliver_height, x, y, self.sliver_width, self.sliver_height, false, true)
+				self.slivers[side][j].dx = self.x + self.corner_size + (self.grow_delta * (j - 1))
+				self.slivers[side][j].dy = self.y + self.height - self.sliver_height
 			end
 
 			if (side == "left") then
-				local x = self.x
-				local y = self.y + self.corner_size + (self.grow_delta * (i - 1))
-				sspr(spr_x, spr_y, self.sliver_height, self.sliver_width, x, y, self.sliver_height, self.sliver_width)
+				self.slivers[side][j].dx = self.x
+				self.slivers[side][j].dy = self.y + self.corner_size + (self.grow_delta * (j - 1))
 			end
 
 			if (side == "right") then
-				local x = self.x + self.width - self.sliver_height
-				local y = self.y + self.corner_size + (self.grow_delta * (i - 1))
-				sspr(spr_x, spr_y, self.sliver_height, self.sliver_width, x, y, self.sliver_height, self.sliver_width, true, false)
+				self.slivers[side][j].dx = self.x + self.width - self.sliver_height
+				self.slivers[side][j].dy = self.y + self.corner_size + (self.grow_delta * (j - 1))
 			end
+		end,
+		draw_sliver = function(self, sliver)
+			sspr(
+				sliver.sx,
+				sliver.sy,
+				sliver.sw,
+				sliver.sh,
+				sliver.dx,
+				sliver.dy,
+				sliver.sw,
+				sliver.sh,
+				sliver.flip_x,
+				sliver.flip_y
+			)
 		end,
 		toggle_growth = function(self, toggle)
 			self.should_grow = toggle
@@ -1228,8 +1284,8 @@ function _draw()
 	current_scene:draw()
 	if (profiler_on) then
 		camera()
-		print('mem: '..stat(0), 0, 0)
-		print('cpu: '..stat(1), 0, 8)
+		print('mem: '..stat(0), 0, 0, 7)
+		print('cpu: '..stat(1), 0, 8, 7)
 	end
 end
 __gfx__
