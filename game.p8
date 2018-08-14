@@ -537,6 +537,7 @@ function make_platform(x, y, w, h, directions, color_swatch)
 		should_grow = false,
 		grow_speed = 3,
 		color_swatch = color_swatch,
+		play_sfx = true,
 		available_slivers = {
 			top = {
 				{26, 0}, -- plain
@@ -596,7 +597,7 @@ function make_platform(x, y, w, h, directions, color_swatch)
 		update = function(self)
 			self.counter += 1
 			if self.counter % self.grow_speed == 0 then
-				if self.should_grow and self.counter % 10 == 0 then
+				if self.should_grow and self.counter % 10 == 0 and self.play_sfx then
 					sfx(3)
 				end
 
@@ -1171,6 +1172,7 @@ title_scene = make_scene({
 		self.platform = make_platform(self.border_buffer, 20, 16, 40, {up=false,down=false,left=false,right=true}, 48)
 		self.platform:init()
 		self.platform:toggle_growth(true)
+		self.platform.play_sfx = false
 		self:add(title_screen_text)
 		self:add(make_start_prompt(74))
 		self.sprite_x = self.platform.x + self.platform.width
