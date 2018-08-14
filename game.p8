@@ -244,13 +244,11 @@ function make_scene(options)
 			if (o.update) then
 				o.update(self)
 			end
-			
 			for k, object in pairs(self.objects) do
 				if (object.update) then
 					object:update()
 				end
 			end
-			
 			cam:update()
 		end,
 		draw = function(self)
@@ -1039,7 +1037,6 @@ function make_game_scene(level)
 			self:check_to_grow()
 			self:check_for_death()
 			self:check_for_win()
-			
 		end,
 		draw = function(self)
 			self:fade_update()
@@ -1222,9 +1219,7 @@ function _update60()
 	if (stop) then
 		return
 	end
-	
 	current_scene:update()
-	
 end
 
 function _draw()
