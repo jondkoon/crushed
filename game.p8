@@ -10,6 +10,7 @@ frame_rate = 60
 sound_on = true
 profiler_on = true
 profile_a = nil
+profile_b = nil
 stop = false
 _sfx = sfx
 function sfx(id)
@@ -537,7 +538,7 @@ function make_platform(x, y, w, h, directions, color_swatch)
 		color_swatch = color_swatch,
 		play_sfx = true,
 		available_slivers = {
-			-- top, right, bottom, left
+			-- top
 			{
 				{26, 0}, -- plain
 				{48, 0}, -- dripping
@@ -545,9 +546,11 @@ function make_platform(x, y, w, h, directions, color_swatch)
 				{52, 0},
 				{54, 0},
 			},
+			-- right
 			{
 				{104, 0}, -- shine
 			},
+			-- bottom
 			{
 				{26, 0}, -- plain
 				{26, 0}, -- plain
@@ -556,6 +559,7 @@ function make_platform(x, y, w, h, directions, color_swatch)
 				{44, 0},
 				{46, 0}
 			},
+			-- left
 			{
 				{64, 6}, -- plain
 				{64, 6}, -- plain
@@ -565,6 +569,15 @@ function make_platform(x, y, w, h, directions, color_swatch)
 				{56, 6}
 			}
 		},
+		-- each sliver will have the following structure:
+		-- 1 = sx
+		-- 2 = sy
+		-- 3 = sw
+		-- 4 = sh
+		-- 5 = dx
+		-- 6 = dy
+		-- 7 = flip_x
+		-- 8 = flip_y
 		slivers = {
 			{}, -- top
 			{}, -- right
@@ -572,7 +585,7 @@ function make_platform(x, y, w, h, directions, color_swatch)
 			{} -- left
 		},
 		init = function(self)
-			-- populate slivers for width/height > (self.corner_size*2)
+			-- populate top and bottom slivers
 			if (self.width > (self.corner_size*2)) then
 				local hor_number_slivers_to_create = (self.width - (self.corner_size*2)) / 2
 				for i = 1, hor_number_slivers_to_create do
@@ -580,6 +593,7 @@ function make_platform(x, y, w, h, directions, color_swatch)
 					add(self.slivers[3], self:get_random_sliver(3))
 				end
 			end
+			-- populate right and left slivers
 			if (self.height > (self.corner_size*2)) then
 				local vert_number_slivers_to_create = (self.height - (self.corner_size*2)) / 2
 				for i = 1, vert_number_slivers_to_create do
@@ -605,8 +619,8 @@ function make_platform(x, y, w, h, directions, color_swatch)
 				end
 
 				if self.should_grow then
-					-- grows bounding box and adds new sliver to each side
-					-- todo: separate this into two functions: grow bounding box and add slivers; wrap all three functions in a grow function
+					-- grow() grows the platform's bounding box and adds a new sliver to each side
+					-- todo: separate grow() into two functions: grow bounding box and add slivers; wrap all three functions in a grow function
 					self:grow()
 					self:calculate_sliver_positions()
 				end
@@ -699,80 +713,91 @@ function make_platform(x, y, w, h, directions, color_swatch)
 				collection[random_sliver_index][2]
 			}
 
+			-- top
 			if (side == 1) then
 				sliver[3] = self.sliver_width
 				sliver[4] = self.sliver_height
-				sliver[5] = false
-				sliver[6] = false
+				sliver[7] = false
+				sliver[8] = false
 			end
 
+			-- bottom
 			if (side == 3) then
 				sliver[3] = self.sliver_width
 				sliver[4] = self.sliver_height
-				sliver[5] = false
-				sliver[6] = true
+				sliver[7] = false
+				sliver[8] = true
 			end
 
+			-- left
 			if (side == 4) then
 				sliver[3] = self.sliver_height
 				sliver[4] = self.sliver_width
-				sliver[5] = false
-				sliver[6] = false
+				sliver[7] = false
+				sliver[8] = false
 			end
 
+			-- right
 			if (side == 2) then
 				sliver[3] = self.sliver_height
 				sliver[4] = self.sliver_width
-				sliver[5] = true
-				sliver[6] = false
+				sliver[7] = true
+				sliver[8] = false
 			end
 
 			return sliver
 		end,
 		make_sliver = function(self, side)
-			-- local sides = {"top"=1,"right"=2,"bottom"=3,"left"=4}
 			add(self.slivers[side], self:get_random_sliver(side))
 		end,
 		calculate_sliver_positions = function(self)
 			for side, collection in pairs(self.slivers) do
-				for j = 1, #collection do
-					self:calculate_sliver_position(side, j)
+				for i = 1, #collection do
+					self:calculate_sliver_position(side, i)
 				end
 			end
 		end,
-		calculate_sliver_position = function(self, side, j)
+		calculate_sliver_position = function(self, side, i)
+			-- save the sliver's x and y position in the sliver table so that we
+			-- only have to update these values if the platform is growing
+
+			-- top
 			if (side == 1) then
-				self.slivers[side][j][7] = self.x + self.corner_size + (self.grow_delta * (j - 1))
-				self.slivers[side][j][8] = self.y
+				self.slivers[side][i][5] = self.x + self.corner_size + (self.grow_delta * (i - 1))
+				self.slivers[side][i][6] = self.y
 			end
 
+			-- bottom
 			if (side == 3) then
-				self.slivers[side][j][7] = self.x + self.corner_size + (self.grow_delta * (j - 1))
-				self.slivers[side][j][8] = self.y + self.height - self.sliver_height
+				self.slivers[side][i][5] = self.x + self.corner_size + (self.grow_delta * (i - 1))
+				self.slivers[side][i][6] = self.y + self.height - self.sliver_height
 			end
 
+			-- left
 			if (side == 4) then
-				self.slivers[side][j][7] = self.x
-				self.slivers[side][j][8] = self.y + self.corner_size + (self.grow_delta * (j - 1))
+				self.slivers[side][i][5] = self.x
+				self.slivers[side][i][6] = self.y + self.corner_size + (self.grow_delta * (i - 1))
 			end
 
+			-- right
 			if (side == 2) then
-				self.slivers[side][j][7] = self.x + self.width - self.sliver_height
-				self.slivers[side][j][8] = self.y + self.corner_size + (self.grow_delta * (j - 1))
+				self.slivers[side][i][5] = self.x + self.width - self.sliver_height
+				self.slivers[side][i][6] = self.y + self.corner_size + (self.grow_delta * (i - 1))
 			end
 		end,
 		draw_sliver = function(self, sliver)
+			-- sspr(sx, sy, sw, sh, dx, dy, [dw, dh], [flip_x], [flip_y])
 			sspr(
 				sliver[1],
 				sliver[2],
 				sliver[3],
 				sliver[4],
-				sliver[7],
-				sliver[8],
+				sliver[5],
+				sliver[6],
 				sliver[3],
 				sliver[4],
-				sliver[5],
-				sliver[6]
+				sliver[7],
+				sliver[8]
 			)
 		end,
 		toggle_growth = function(self, toggle)
@@ -1291,7 +1316,10 @@ function _draw()
 		print('mem: '.. flr(stat(0)), 0, 0, 7)
 		print('cpu: '.. (flr(stat(1) * 100)) .. '%', 0, 8, 7)
 		if (profile_a) then
-			print('a: '..profile_a, 0, 16, 7)
+			print('a: '..profile_a, 0, 16)
+		end
+		if (profile_b) then
+			print('b: '..profile_b, 0, 24)
 		end
 	end
 end
