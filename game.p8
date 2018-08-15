@@ -255,13 +255,11 @@ function make_scene(options)
 			cls(0)
 			self:fade_update()
 			cam:set()
-			-- if the object has an x coordinate make sure it is on the screen
-			-- otherwise let it draw
-			if (o.draw and (not o.x or cam:in_view(o))) then
+			if (o.draw) then
 				o.draw(self)
 			end
 			for k, object in pairs(self.objects) do
-				if (object.draw) then
+				if (object.draw and cam:in_view(object)) then
 					object:draw()
 				end
 			end
@@ -491,10 +489,12 @@ function make_explosion(scene, x, y)
 	sfx(12)
 	local make_particle = function(x, y)
 		local particle_colors = { 6, 7, 9, 10 }
+		local size = 5 + flr(rnd(8))
 		local particle = {
 			x = x - 4 + flr(rnd(8)),
 			y = y - 4 + flr(rnd(8)),
-			width = 5 + flr(rnd(8)),
+			width = size,
+			height = size,
 			color = random_one(particle_colors),
 			counter = 10 + flr(rnd(10)),
 			dx = flr(rnd(3)) - 1.5,
@@ -1164,13 +1164,13 @@ title_scene = make_scene({
 			local y = self.platform.y + (self.platform.height / 2) - 2
 			print("crushed", x, y, 7)
 		end
+		title_screen_text:draw()
 	end,
 	init = function(self)
 		self.platform = make_platform(self.border_buffer, 20, 16, 40, {up=false,down=false,left=false,right=true}, 48)
 		self.platform:init()
 		self.platform:toggle_growth(true)
 		self.platform.play_sfx = false
-		self:add(title_screen_text)
 		self:add(make_start_prompt(74))
 		self.sprite_x = self.platform.x + self.platform.width
 		self.sprite_y = self.platform.y + self.platform.height - 8
