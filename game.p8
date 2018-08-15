@@ -216,6 +216,7 @@ function make_scene(options)
 					self.fade_timer_dx = false
 					if (self.fade_callback) then
 						self.fade_callback()
+						self.fade_callback = nil
 					end
 				end
 			end
