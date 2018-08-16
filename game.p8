@@ -348,8 +348,10 @@ function make_player(scene)
 			}
 		end,
 		destroy = function(self)
+			if (not self.is_dying) then
+				self.is_dying = true
 			make_explosion(scene, self.x, self.y)
-			scene:reset_level()
+			end
 		end,
 		update = function(self)
 			self.squating = btn(3, self.player)
@@ -853,11 +855,11 @@ function make_platform(x, y, w, h, directions, color_swatch)
 				if (colliding.bottom and grow_up) then
 					self.player.y -= dy
 				elseif (colliding.left and grow_right) then
-					self.player.x += dx
+					self.player.x += d_width
 				elseif (colliding.right and grow_left) then
 					self.player.x -= dx
 				elseif (colliding.top and grow_down) then
-					self.player.y += dy
+					self.player.y += d_height
 				end
 			end
 		end
@@ -981,18 +983,15 @@ function make_game_scene(level)
 			-- cam.to_print = s('t',is_top)..s('r',is_right)..s('b',is_bottom)..s('l',is_left)
 
 			if ((is_left and is_right) or (is_top and is_bottom)) then
-				if (self.trigger_death and not self.is_dying) then
+				if (self.trigger_death) then
 					-- only kill player if squashed for 2 frames
-					self:kill_player()
+					self.player:destroy()
+					self:reset_level()
 				end
 				self.trigger_death = true
 			else
 				self.trigger_death = false
 			end
-		end,
-		kill_player = function(self)
-			self.player:destroy()
-			self.is_dying = true
 		end,
 		form_platform = function(self, map_x, map_y)
 			function is_behavior(tile_id)
@@ -1292,7 +1291,7 @@ winning_scene = make_scene({
 })
 
 current_scene = title_scene
--- current_scene = make_game_scene(3)
+-- current_scene = make_game_scene(0)
 -- current_scene = winning_scene
 
 function _init()
