@@ -1,7 +1,7 @@
 ![crushed_title_screen3x.png](https://github.com/jondkoon/crushed/raw/master/images/crushed_title_screen3x.png)
 
 ## Crushed
-"Crushed" is a game developed by Jon Koon and Rusty Bailey over a weeken for the game jam, Ludum Dare 42. The theme for this jam was "Running out of Space".
+"Crushed" is a game developed by Jon Koon and Rusty Bailey over a weekend for the game jam, Ludum Dare 42. The theme for this jam was "Running out of Space".
 The game is hosted on itch.io (https://rustybailey.itch.io/crushed) and you can find the LD42 page here (https://ldjam.com/events/ludum-dare/42/crushed).
 
 #### Description
