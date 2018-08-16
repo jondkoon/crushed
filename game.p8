@@ -1,7 +1,8 @@
 pico-8 cartridge // http://www.pico-8.com
 version 16
 __lua__
-
+-- crushed
+-- by jon koon and rusty bailey
 screen_width = 128
 half_screen_width = screen_width / 2
 screen_height = 128
