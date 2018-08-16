@@ -254,7 +254,6 @@ function make_scene(options)
 			cam:update()
 		end,
 		draw = function(self)
-			cls(0)
 			self:fade_update()
 			cam:set()
 			if (o.draw) then
@@ -914,7 +913,6 @@ function make_game_scene(level)
 		width = screen_width,
 		music = 3,
 		background_tile = 53,
-		needs_background = {},
 		paint_background = function(self, x, y)
 			add(self.needs_background, { x = x, y = y})
 		end,
@@ -976,12 +974,6 @@ function make_game_scene(level)
 				end
 			end
 
-			-- function s(c, bool)
-			-- 	return bool and c..':t ' or c..':f '
-			-- end
-
-			-- cam.to_print = s('t',is_top)..s('r',is_right)..s('b',is_bottom)..s('l',is_left)
-
 			if ((is_left and is_right) or (is_top and is_bottom)) then
 				if (self.trigger_death) then
 					-- only kill player if squashed for 2 frames
@@ -1041,7 +1033,6 @@ function make_game_scene(level)
 						if (not behavior and is_behavior(tile_id)) then
 							behavior = tile_id
 						end
-						self:paint_background(map_x*tile_size - self.level_x_offset, map_y*tile_size)
 						visit_adjacent(map_x, map_y)
 					end
 				end
@@ -1060,6 +1051,12 @@ function make_game_scene(level)
 			local left = fget(behavior, 3)
 
 			local platform = make_platform(x - self.level_x_offset,y,width,height,{ up = up, down = down, right = right, left = left }, tile_id)
+			self:paint_background(platform.x,platform.y)
+			self:paint_background(platform.x + platform.width - tile_size,platform.y)
+			if (platform.height > tile_size) then
+				self:paint_background(platform.x + platform.width - tile_size, platform.y + platform.height - tile_size)
+				self:paint_background(platform.x, platform.y + platform.height - tile_size)
+			end
 			return platform
 		end,
 		check_for_win = function(self)
@@ -1074,6 +1071,7 @@ function make_game_scene(level)
 			menuitem(1, "restart level", function()
 				self:reset_level()
 			end)
+			self.needs_background = {}
 			self.is_dying = false
 			self.visited = {}
 			self.blocks = {}
@@ -1122,6 +1120,7 @@ function make_game_scene(level)
 			self:check_for_win()
 		end,
 		draw = function(self)
+			cls(0)
 			self:fade_update()
 			palt(0, false)
 			map(self.level_x_offset / tile_size, 0, 0, 0, self.width / tile_size, self.height / tile_size)
@@ -1291,7 +1290,7 @@ winning_scene = make_scene({
 })
 
 current_scene = title_scene
--- current_scene = make_game_scene(0)
+-- current_scene = make_game_scene(2)
 -- current_scene = winning_scene
 
 function _init()
