@@ -261,10 +261,15 @@ function make_scene(options)
 				o.draw(self)
 			end
 			for k, object in pairs(self.objects) do
-				if (object.draw and cam:in_view(object)) then
+				if (object.draw and object.is_background and cam:in_view(object)) then
 					object:draw()
 				end
 			end
+			for k, object in pairs(self.objects) do
+				if (object.draw and (not object.is_background) and cam:in_view(object)) then
+					object:draw()
+				end
+			end			
 		end
 	}
 	return merge_tables(options, scene)
@@ -908,6 +913,34 @@ function make_door(x,y,current_level,player)
 	}
 end
 
+function make_sconce(x,y)
+	return {
+		x = x,
+		y = y,
+		width = 8,
+		height = 8,
+		sprites = {55,60,61,60},
+		is_background = true,
+		init = function(self)
+			self.interval = 10 + flr(rnd(10))
+			self.sprite = 1 + flr(rnd(#self.sprites))
+			self.counter = flr(rnd(self.interval))
+		end,
+		update = function(self)
+			self.counter += 1
+			if self.counter % self.interval == 0 then
+				self.sprite += 1
+				if self.sprite > #self.sprites then
+					self.sprite = 1
+				end
+			end
+		end,
+		draw = function(self)
+			spr(self.sprites[self.sprite], self.x, self.y)
+		end
+	}
+end
+
 function make_game_scene(level)
 	return make_scene({
 		height = screen_height * 4,
@@ -1100,6 +1133,10 @@ function make_game_scene(level)
 						self.player.dy = 1 -- falling
 					elseif (tile_id == 71) then
 						self.chalice = make_chalice(x - self.level_x_offset,y)
+					elseif (tile_id == 55) then
+						self:paint_background(x - self.level_x_offset, y)
+						local sconce = make_sconce(x - self.level_x_offset, y)
+						self:add(sconce)
 					else
 						local platform = self:form_platform(map_x, map_y)
 						if (platform) then
@@ -1291,7 +1328,7 @@ winning_scene = make_scene({
 })
 
 current_scene = title_scene
--- current_scene = make_game_scene(2)
+-- current_scene = make_game_scene(1)
 -- current_scene = winning_scene
 
 function _init()
