@@ -46,6 +46,13 @@ function test_collision(a, b)
 	)
 end
 
+function get_center(object)
+	return {
+		x = object.x + (object.width / 2),
+		y = object.y + (object.height / 2)
+	}
+end
+
 function random_one(set)
 	return set[1 + flr(rnd(count(set)))]
 end
@@ -98,12 +105,18 @@ function make_iris(cx, cy, r)
     local x = cx + r * cos(theta / 360)
     local y = cy + r * sin(theta / 360)
     local x2 = x >= cx and screen_width or 0
-    rectfill(x, y, x2, y2, 0)
+		if (x >= 0 and x <= screen_width and y >= 0 and y <= screen_height) then
+			rectfill(x, y, x2, y2, 0)
+		end
     y2 = y
     theta += step
   end
-  rectfill(0,0,screen_width, cy - r, 0)
-  rectfill(0,screen_height,screen_width, cy + r, 0)
+	if (cy - r > 0) then
+  	rectfill(0,0,screen_width, cy - r, 0)
+	end
+	if (cy + r <= screen_height) then
+  	rectfill(0,screen_height,screen_width, cy + r, 0)
+	end
 end
 
 cam = {
@@ -140,6 +153,13 @@ cam = {
 			width = screen_width,
 			height = screen_height
 		}, object)
+	end,
+	-- converts scene coordinates to screen coordinates
+	position_on_screen = function(self, object)
+		return {
+			x = object.x - self.x,
+			y = object.y - self.y
+		}
 	end,
 	update_shake = function(self)
 		if (self.shake_counter > 0) then
@@ -234,7 +254,7 @@ function make_scene(options)
 			self.iris_r = 200
 			self.iris_x = x
 			self.iris_y = y
-			self.iris_dr = -3
+			self.iris_dr = -4
 			self.iris_callback = callback
 			self.iris_active = true
 		end,
@@ -242,7 +262,7 @@ function make_scene(options)
 			self.iris_r = 3
 			self.iris_x = x
 			self.iris_y = y
-			self.iris_dr = 3
+			self.iris_dr = 4
 			self.iris_callback = callback
 			self.iris_active = true
 		end,
@@ -337,12 +357,12 @@ function change_scene(scene)
 	end
 	changing_scene = true
 	menuitem(1) -- remove reset level
-	current_scene:fade_down(function()
+	-- current_scene:fade_down(function()
 		scene:init()
 		current_scene = scene
-		scene:fade_up()
+		-- scene:fade_up()
 		changing_scene = false
-	end)
+	-- end)
 end
 
 gravity = 1
@@ -962,7 +982,10 @@ function make_door(x,y,scene)
 			if (not self.triggered and test_collision(self, scene.player)) then
 				self.triggered = true
 				local next_level = next_level_map[scene.level + 1]
-				change_scene(make_game_scene(next_level))
+				local coordinates = cam:position_on_screen(get_center(scene.player))
+				scene:iris_in(coordinates.x, coordinates.y, function()
+					change_scene(make_game_scene(next_level))
+				end)
 			end
 		end
 	}
@@ -1186,9 +1209,6 @@ function make_game_scene(level)
 					elseif (tile_id == 49) then
 						self.player.x = x + 2 - self.level_x_offset
 						self.player.y = y
-						local cx = self.player.x + (self.player.width / 2)
-						local cy = self.player.y + (self.player.height / 2)
-						self:iris_out(cx, screen_height - (level_height - cy))
 						self.player.dy = 1 -- falling
 					elseif (tile_id == 48) then
 						self.chalice = make_chalice(x - self.level_x_offset,y)
@@ -1209,6 +1229,9 @@ function make_game_scene(level)
 
 			cam.y = self.height - screen_height
 			cam:follow(self.player, 20)
+			local coordinates = cam:position_on_screen(get_center(self.player))
+			self:iris_out(coordinates.x, coordinates.y)
+
 			self:add(self.player)
 		end,
 		update = function(self)
@@ -1367,7 +1390,7 @@ local you_won = {
 	end,
 	draw = function(self)
 		palt(1, true)
-		spr(71, screen_width / 2 - 4, self.y)
+		spr(48, screen_width / 2 - 4, self.y)
 		palt(1, false)
 		print(self.text, self.x, self.y + 15, 7)
 	end
@@ -1386,8 +1409,8 @@ winning_scene = make_scene({
 	end
 })
 
-current_scene = title_scene
--- current_scene = make_game_scene(3)
+-- current_scene = title_scene
+current_scene = make_game_scene(0)
 -- current_scene = winning_scene
 
 function _init()
@@ -1542,9 +1565,9 @@ aaaaaaaa1700007100000000d1111110000000001001111111111001119999111199911111999911
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 33333353535353535353535353535333335353535353535353635353535353333353535353535353535353535353533333535353535353535353535353535333
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-33333353535353635353535353535333335353535363535353535353735353333353735353535353536353535373533333537353535363535353535353535333
+33333353535353635353535353e0f033335353535363535353535353735353333353735353535353536353535373533333537353535363535353535353535333
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-33333353135353535371222253535333335381020253531353535353535353333353535353135353533333535353533333535353535353135353535353a12233
+33333353135353535371222253e1f133335381020253531353535353535353333353535353135353533333535353533333535353535353135353535353a12233
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 33333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333
 __gff__
