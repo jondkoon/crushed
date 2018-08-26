@@ -86,6 +86,26 @@ function fade(i)
 	end
 end
 
+function make_iris(cx, cy, r)
+  if (r <= 3) then
+    cls(0)
+    return
+  end
+  local theta = 0
+  local step = 0.2 -- adjust quality - lower is better
+  local y2 = cy + r
+  while theta <= 360 do
+    local x = cx + r * cos(theta / 360)
+    local y = cx + r * sin(theta / 360)
+    local x2 = x >= cx and screen_width or 0
+    rectfill(x, y, x2, y2, 0)
+    y2 = y
+    theta += step
+  end
+  rectfill(0,0,screen_width, cy - r, 0)
+  rectfill(0,screen_height,screen_width, cy + r, 0)
+end
+
 cam = {
 	x = 0,
 	y = 0,
@@ -210,6 +230,37 @@ function make_scene(options)
 			end
 			o.init(self)
 		end,
+		iris_in = function(self, x, y, callback)
+			self.iris_r = 200
+			self.iris_x = x
+			self.iris_y = y
+			self.iris_dr = -3
+			self.iris_callback = callback
+			self.iris_active = true
+		end,
+		iris_out = function(self, x, y, iris_callback)
+			self.iris_r = 3
+			self.iris_x = x
+			self.iris_y = y
+			self.iris_dr = 3
+			self.iris_callback = callback
+			self.iris_active = true
+		end,
+		iris_update = function(self, x, y)
+			if (self.iris_active) then
+				self.iris_r += self.iris_dr
+				if (self.iris_r > 200 or self.iris_r < 3) then
+					self.iris_callback()
+					self.iris_callback = nil
+					self.iris_active = false
+				end
+			end
+		end,
+		iris_draw = function(self)
+			if (self.iris_active) then
+				make_iris(self.iris_x, self.iris_y, self.iris_r)
+			end
+		end,
 		fade_update = function(self)
 			if (self.fade_timer_dx) then
 				fade(flr(self.fade_timer))
@@ -244,6 +295,7 @@ function make_scene(options)
 			del(self.objects, object)
 		end,
 		update = function(self)
+			self:iris_update()
 			if (o.update) then
 				o.update(self)
 			end
@@ -269,7 +321,8 @@ function make_scene(options)
 				if (object.draw and (not object.is_background) and cam:in_view(object)) then
 					object:draw()
 				end
-			end			
+			end
+			self:iris_draw()
 		end
 	}
 	return merge_tables(options, scene)
