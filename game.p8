@@ -250,24 +250,25 @@ function make_scene(options)
 			end
 			o.init(self)
 		end,
-		iris_in = function(self, x, y, callback)
+		iris_in = function(self, target, callback)
 			self.iris_r = 200
-			self.iris_x = x
-			self.iris_y = y
+			self.iris_target = target
 			self.iris_dr = -4
 			self.iris_callback = callback
 			self.iris_active = true
 		end,
-		iris_out = function(self, x, y, iris_callback)
+		iris_out = function(self, target, iris_callback)
 			self.iris_r = 3
-			self.iris_x = x
-			self.iris_y = y
+			self.iris_target = target
 			self.iris_dr = 4
 			self.iris_callback = callback
 			self.iris_active = true
 		end,
 		iris_update = function(self, x, y)
 			if (self.iris_active) then
+				local coordinates = cam:position_on_screen(get_center(self.iris_target))
+				self.iris_x = coordinates.x
+				self.iris_y = coordinates.y
 				self.iris_r += self.iris_dr
 				if (self.iris_r > 200 or self.iris_r < 3) then
 					if (self.iris_callback) then
@@ -982,8 +983,7 @@ function make_door(x,y,scene)
 			if (not self.triggered and test_collision(self, scene.player)) then
 				self.triggered = true
 				local next_level = next_level_map[scene.level + 1]
-				local coordinates = cam:position_on_screen(get_center(scene.player))
-				scene:iris_in(coordinates.x, coordinates.y, function()
+				scene:iris_in(scene.player, function()
 					change_scene(make_game_scene(next_level))
 				end)
 			end
@@ -1229,9 +1229,7 @@ function make_game_scene(level)
 
 			cam.y = self.height - screen_height
 			cam:follow(self.player, 20)
-			local coordinates = cam:position_on_screen(get_center(self.player))
-			self:iris_out(coordinates.x, coordinates.y)
-
+			self:iris_out(self.player)
 			self:add(self.player)
 		end,
 		update = function(self)
