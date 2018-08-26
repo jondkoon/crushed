@@ -96,7 +96,7 @@ function make_iris(cx, cy, r)
   local y2 = cy + r
   while theta <= 360 do
     local x = cx + r * cos(theta / 360)
-    local y = cx + r * sin(theta / 360)
+    local y = cy + r * sin(theta / 360)
     local x2 = x >= cx and screen_width or 0
     rectfill(x, y, x2, y2, 0)
     y2 = y
@@ -250,14 +250,17 @@ function make_scene(options)
 			if (self.iris_active) then
 				self.iris_r += self.iris_dr
 				if (self.iris_r > 200 or self.iris_r < 3) then
-					self.iris_callback()
-					self.iris_callback = nil
+					if (self.iris_callback) then
+						self.iris_callback()
+						self.iris_callback = nil
+					end
 					self.iris_active = false
 				end
 			end
 		end,
 		iris_draw = function(self)
 			if (self.iris_active) then
+				camera()
 				make_iris(self.iris_x, self.iris_y, self.iris_r)
 			end
 		end,
@@ -277,7 +280,6 @@ function make_scene(options)
 		fade_down = function(self, fade_callback)
 			self.fade_timer = 0
 			self.fade_timer_dx = 1
-			self.fade_max = 30
 			self.fade_callback = fade_callback
 		end,
 		fade_up = function(self, fade_callback)
@@ -950,16 +952,16 @@ local next_level_map = {
 	2
 }
 
-function make_door(x,y,current_level,player)
+function make_door(x,y,scene)
 	return {
 		x = x,
 		y = y,
 		width = 16,
 		height = 16,
 		update = function(self)
-			if (not self.triggered and test_collision(self, player)) then
+			if (not self.triggered and test_collision(self, scene.player)) then
 				self.triggered = true
-				local next_level = next_level_map[current_level + 1]
+				local next_level = next_level_map[scene.level + 1]
 				change_scene(make_game_scene(next_level))
 			end
 		end
@@ -996,6 +998,7 @@ end
 
 function make_game_scene(level)
 	return make_scene({
+		level = level,
 		height = screen_height * 4,
 		width = screen_width,
 		music = 3,
@@ -1167,7 +1170,7 @@ function make_game_scene(level)
 			local level_height = screen_height * 4
 
 			self.player = make_player(self)
-			self.level_x_offset = level * level_width
+			self.level_x_offset = self.level * level_width
 			for x = self.level_x_offset, (self.level_x_offset + level_width), tile_size do
 				for y = 0, level_height, tile_size do
 					local map_x = x / tile_size
@@ -1178,11 +1181,14 @@ function make_game_scene(level)
 						self:add(block)
 						add(self.blocks, block)
 					elseif (tile_id == 14) then
-						local door = make_door(x - self.level_x_offset, y, level, self.player)
+						local door = make_door(x - self.level_x_offset, y, self)
 						self:add(door)
 					elseif (tile_id == 49) then
 						self.player.x = x + 2 - self.level_x_offset
 						self.player.y = y
+						local cx = self.player.x + (self.player.width / 2)
+						local cy = self.player.y + (self.player.height / 2)
+						self:iris_out(cx, screen_height - (level_height - cy))
 						self.player.dy = 1 -- falling
 					elseif (tile_id == 48) then
 						self.chalice = make_chalice(x - self.level_x_offset,y)
