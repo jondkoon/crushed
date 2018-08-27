@@ -258,31 +258,29 @@ function make_scene(options)
 			self.iris_active = true
 		end,
 		iris_out = function(self, target, iris_callback)
-			self.iris_r = 3
+			self.iris_r = 4
 			self.iris_target = target
 			self.iris_dr = 4
 			self.iris_callback = callback
 			self.iris_active = true
 		end,
-		iris_update = function(self, x, y)
+		iris_draw = function(self)
 			if (self.iris_active) then
 				local coordinates = cam:position_on_screen(get_center(self.iris_target))
 				self.iris_x = coordinates.x
 				self.iris_y = coordinates.y
 				self.iris_r += self.iris_dr
-				if (self.iris_r > 200 or self.iris_r < 3) then
+				if (self.iris_r > 200 or self.iris_r < 4) then
+					self.iris_target = nil
+					self.iris_active = false
 					if (self.iris_callback) then
 						self.iris_callback()
 						self.iris_callback = nil
 					end
-					self.iris_active = false
+				else
+					camera()
+					make_iris(self.iris_x, self.iris_y, self.iris_r)
 				end
-			end
-		end,
-		iris_draw = function(self)
-			if (self.iris_active) then
-				camera()
-				make_iris(self.iris_x, self.iris_y, self.iris_r)
 			end
 		end,
 		fade_update = function(self)
@@ -318,7 +316,6 @@ function make_scene(options)
 			del(self.objects, object)
 		end,
 		update = function(self)
-			self:iris_update()
 			if (o.update) then
 				o.update(self)
 			end
@@ -351,19 +348,37 @@ function make_scene(options)
 	return merge_tables(options, scene)
 end
 
-local changing_scene = false
-function change_scene(scene)
+changing_scene = false
+function change_scene(scene, transition_out, transition_in)
 	if (changing_scene) then
 		return
 	end
+
 	changing_scene = true
-	menuitem(1) -- remove reset level
-	-- current_scene:fade_down(function()
+	menuitem(1) -- remove reset level	
+	local t_out = transition_out or "fade"
+	local t_in = transition_in or "fade"
+
+	local scene_in = function()
 		scene:init()
 		current_scene = scene
-		-- scene:fade_up()
 		changing_scene = false
-	-- end)
+		if (t_in == "fade") then
+			fade(30)
+			current_scene:fade_up()
+		elseif (t_in == "iris") then
+			fade(0)
+			current_scene:iris_out(current_scene.player)
+		end
+	end
+
+	if (t_out == "fade") then
+		current_scene:fade_down(scene_in)
+	elseif (t_out == "iris") then
+		current_scene:iris_in(current_scene.player, scene_in)
+	else
+		scene_in()
+	end
 end
 
 gravity = 1
@@ -566,8 +581,6 @@ function make_player(scene)
 		end
 	}
 end
-
-
 
 function make_explosion(scene, x, y)
 	cam:shake()
@@ -983,9 +996,7 @@ function make_door(x,y,scene)
 			if (not self.triggered and test_collision(self, scene.player)) then
 				self.triggered = true
 				local next_level = next_level_map[scene.level + 1]
-				scene:iris_in(scene.player, function()
-					change_scene(make_game_scene(next_level))
-				end)
+				change_scene(make_game_scene(next_level), "iris", "iris")
 			end
 		end
 	}
@@ -1174,11 +1185,11 @@ function make_game_scene(level)
 		end,
 		check_for_win = function(self)
 			if (self.chalice and test_collision(self.player, self.chalice)) then
-				change_scene(winning_scene)
+				change_scene(winning_scene, "iris", "fade")
 			end
 		end,
 		reset_level = function(self)
-			change_scene(self)
+			change_scene(self, "fade", "iris")
 		end,
 		init = function(self)
 			menuitem(1, "restart level", function()
@@ -1229,7 +1240,6 @@ function make_game_scene(level)
 
 			cam.y = self.height - screen_height
 			cam:follow(self.player, 20)
-			self:iris_out(self.player)
 			self:add(self.player)
 		end,
 		update = function(self)
@@ -1313,7 +1323,7 @@ make_start_prompt = function(y,text,scene)
 				if (scene) then
 					change_scene(scene)
 				else
-					change_scene(make_game_scene(0))
+					change_scene(make_game_scene(0), "fade", "iris")
 				end
 			end
 		end,
@@ -1407,8 +1417,8 @@ winning_scene = make_scene({
 	end
 })
 
--- current_scene = title_scene
-current_scene = make_game_scene(0)
+current_scene = title_scene
+-- current_scene = make_game_scene(0)
 -- current_scene = winning_scene
 
 function _init()
@@ -1563,9 +1573,9 @@ aaaaaaaa1700007100000000d1111110000000001001111111111001119999111199911111999911
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 33333353535353535353535353535333335353535353535353635353535353333353535353535353535353535353533333535353535353535353535353535333
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-33333353535353635353535353e0f033335353535363535353535353735353333353735353535353536353535373533333537353535363535353535353535333
+33333353535353635353035353535333335353535363535353535353735353333353735353535353536353535373533333537353535363535353535353535333
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-33333353135353535371222253e1f133335381020253531353535353535353333353535353135353533333535353533333535353535353135353535353a12233
+33333353135353535371222253535333335381020253531353535353535353333353535353135353533333535353533333535353535353135353535353a12233
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 33333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333
 __gff__
