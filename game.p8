@@ -270,6 +270,9 @@ function make_scene(options)
 				self.iris_x = coordinates.x
 				self.iris_y = coordinates.y
 				self.iris_r += self.iris_dr
+				camera()
+				make_iris(self.iris_x, self.iris_y, self.iris_r)
+								
 				if (self.iris_r > 200 or self.iris_r < 4) then
 					self.iris_target = nil
 					self.iris_active = false
@@ -277,9 +280,6 @@ function make_scene(options)
 						self.iris_callback()
 						self.iris_callback = nil
 					end
-				else
-					camera()
-					make_iris(self.iris_x, self.iris_y, self.iris_r)
 				end
 			end
 		end,
