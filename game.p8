@@ -93,6 +93,13 @@ function fade(i)
 	end
 end
 
+function iris_get_max_r(x,y)
+  farthest_x = x >= (screen_width / 2) and 0 or screen_width
+  farthest_y = y >= (screen_height / 2) and 0 or screen_height
+
+  return sqrt((farthest_x - x)^2 + (farthest_y - y)^2)
+end
+
 function make_iris(cx, cy, r)
   if (r <= 3) then
     cls(0)
@@ -251,7 +258,8 @@ function make_scene(options)
 			o.init(self)
 		end,
 		iris_in = function(self, target, callback)
-			self.iris_r = 200
+			local center = cam:position_on_screen(get_center(target))
+			self.iris_r = iris_get_max_r(center.x, center.y)
 			self.iris_target = target
 			self.iris_dr = -4
 			self.iris_callback = callback
