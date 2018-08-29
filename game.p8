@@ -266,6 +266,8 @@ function make_scene(options)
 			self.iris_active = true
 		end,
 		iris_out = function(self, target, iris_callback)
+			local center = cam:position_on_screen(get_center(target))
+			self.max_iris_r = iris_get_max_r(center.x, center.y)		
 			self.iris_r = 4
 			self.iris_target = target
 			self.iris_dr = 8
@@ -281,7 +283,7 @@ function make_scene(options)
 				camera()
 				make_iris(self.iris_x, self.iris_y, self.iris_r)
 								
-				if (self.iris_r > 200 or self.iris_r < 4) then
+				if (self.iris_r > self.max_iris_r or self.iris_r < 4) then
 					self.iris_target = nil
 					self.iris_active = false
 					if (self.iris_callback) then
