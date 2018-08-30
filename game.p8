@@ -106,7 +106,7 @@ function make_iris(cx, cy, r)
     return
   end
   local theta = 0
-  local step = 0.2 -- adjust quality - lower is better
+  local step = 0.4 -- adjust quality - lower makes a better curve but is more expensive
   local y2 = cy + r
   while theta <= 360 do
     local x = cx + r * cos(theta / 360)
@@ -261,7 +261,7 @@ function make_scene(options)
 			local center = cam:position_on_screen(get_center(target))
 			self.iris_r = iris_get_max_r(center.x, center.y)
 			self.iris_target = target
-			self.iris_dr = -8
+			self.iris_dr = -5
 			self.iris_callback = callback
 			self.iris_active = true
 		end,
@@ -270,7 +270,7 @@ function make_scene(options)
 			self.max_iris_r = iris_get_max_r(center.x, center.y)		
 			self.iris_r = 4
 			self.iris_target = target
-			self.iris_dr = 8
+			self.iris_dr = 5
 			self.iris_callback = callback
 			self.iris_active = true
 		end,
