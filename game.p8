@@ -46,6 +46,13 @@ function test_collision(a, b)
 	)
 end
 
+function get_center(object)
+	return {
+		x = object.x + (object.width / 2),
+		y = object.y + (object.height / 2)
+	}
+end
+
 function random_one(set)
 	return set[1 + flr(rnd(count(set)))]
 end
@@ -86,6 +93,39 @@ function fade(i)
 	end
 end
 
+function iris_get_max_r(x,y)
+  farthest_x = x >= (screen_width / 2) and 0 or screen_width
+  farthest_y = y >= (screen_height / 2) and 0 or screen_height
+
+  return sqrt((farthest_x - x)^2 + (farthest_y - y)^2)
+end
+
+function make_iris(cx, cy, r)
+  if (r <= 3) then
+    cls(0)
+    return
+  end
+  local theta = 0
+  local step = 0.4 -- adjust quality - lower makes a better curve but is more expensive
+  local y2 = cy + r
+  while theta <= 360 do
+    local x = cx + r * cos(theta / 360)
+    local y = cy + r * sin(theta / 360)
+    local x2 = x >= cx and screen_width or 0
+		if (x >= 0 and x <= screen_width and y >= 0 and y <= screen_height) then
+			rectfill(x, y, x2, y2, 0)
+		end
+    y2 = y
+    theta += step
+  end
+	if (cy - r > 0) then
+  	rectfill(0,0,screen_width, cy - r, 0)
+	end
+	if (cy + r <= screen_height) then
+  	rectfill(0,screen_height,screen_width, cy + r, 0)
+	end
+end
+
 cam = {
 	x = 0,
 	y = 0,
@@ -120,6 +160,13 @@ cam = {
 			width = screen_width,
 			height = screen_height
 		}, object)
+	end,
+	-- converts scene coordinates to screen coordinates
+	position_on_screen = function(self, object)
+		return {
+			x = object.x - self.x,
+			y = object.y - self.y
+		}
 	end,
 	update_shake = function(self)
 		if (self.shake_counter > 0) then
@@ -210,6 +257,42 @@ function make_scene(options)
 			end
 			o.init(self)
 		end,
+		iris_in = function(self, target, callback)
+			local center = cam:position_on_screen(get_center(target))
+			self.iris_r = iris_get_max_r(center.x, center.y)
+			self.iris_target = target
+			self.iris_dr = -5
+			self.iris_callback = callback
+			self.iris_active = true
+		end,
+		iris_out = function(self, target, iris_callback)
+			local center = cam:position_on_screen(get_center(target))
+			self.max_iris_r = iris_get_max_r(center.x, center.y)		
+			self.iris_r = 4
+			self.iris_target = target
+			self.iris_dr = 5
+			self.iris_callback = callback
+			self.iris_active = true
+		end,
+		iris_draw = function(self)
+			if (self.iris_active) then
+				local coordinates = cam:position_on_screen(get_center(self.iris_target))
+				self.iris_x = coordinates.x
+				self.iris_y = coordinates.y
+				self.iris_r += self.iris_dr
+				camera()
+				make_iris(self.iris_x, self.iris_y, self.iris_r)
+								
+				if (self.iris_r > self.max_iris_r or self.iris_r < 4) then
+					self.iris_target = nil
+					self.iris_active = false
+					if (self.iris_callback) then
+						self.iris_callback()
+						self.iris_callback = nil
+					end
+				end
+			end
+		end,
 		fade_update = function(self)
 			if (self.fade_timer_dx) then
 				fade(flr(self.fade_timer))
@@ -226,7 +309,6 @@ function make_scene(options)
 		fade_down = function(self, fade_callback)
 			self.fade_timer = 0
 			self.fade_timer_dx = 1
-			self.fade_max = 30
 			self.fade_callback = fade_callback
 		end,
 		fade_up = function(self, fade_callback)
@@ -269,25 +351,44 @@ function make_scene(options)
 				if (object.draw and (not object.is_background) and cam:in_view(object)) then
 					object:draw()
 				end
-			end			
+			end
+			self:iris_draw()
 		end
 	}
 	return merge_tables(options, scene)
 end
 
-local changing_scene = false
-function change_scene(scene)
+changing_scene = false
+function change_scene(scene, transition_out, transition_in)
 	if (changing_scene) then
 		return
 	end
+
 	changing_scene = true
-	menuitem(1) -- remove reset level
-	current_scene:fade_down(function()
+	menuitem(1) -- remove reset level	
+	local t_out = transition_out or "fade"
+	local t_in = transition_in or "fade"
+
+	local scene_in = function()
 		scene:init()
 		current_scene = scene
-		scene:fade_up()
 		changing_scene = false
-	end)
+		if (t_in == "fade") then
+			fade(30)
+			current_scene:fade_up()
+		elseif (t_in == "iris") then
+			fade(0)
+			current_scene:iris_out(current_scene.player)
+		end
+	end
+
+	if (t_out == "fade") then
+		current_scene:fade_down(scene_in)
+	elseif (t_out == "iris") then
+		current_scene:iris_in(current_scene.player, scene_in)
+	else
+		scene_in()
+	end
 end
 
 gravity = 1
@@ -490,8 +591,6 @@ function make_player(scene)
 		end
 	}
 end
-
-
 
 function make_explosion(scene, x, y)
 	cam:shake()
@@ -897,17 +996,17 @@ local next_level_map = {
 	2
 }
 
-function make_door(x,y,current_level,player)
+function make_door(x,y,scene)
 	return {
 		x = x,
 		y = y,
 		width = 16,
 		height = 16,
 		update = function(self)
-			if (not self.triggered and test_collision(self, player)) then
+			if (not self.triggered and test_collision(self, scene.player)) then
 				self.triggered = true
-				local next_level = next_level_map[current_level + 1]
-				change_scene(make_game_scene(next_level))
+				local next_level = next_level_map[scene.level + 1]
+				change_scene(make_game_scene(next_level), "iris", "iris")
 			end
 		end
 	}
@@ -943,6 +1042,7 @@ end
 
 function make_game_scene(level)
 	return make_scene({
+		level = level,
 		height = screen_height * 4,
 		width = screen_width,
 		music = 3,
@@ -1095,11 +1195,11 @@ function make_game_scene(level)
 		end,
 		check_for_win = function(self)
 			if (self.chalice and test_collision(self.player, self.chalice)) then
-				change_scene(winning_scene)
+				change_scene(winning_scene, "iris", "fade")
 			end
 		end,
 		reset_level = function(self)
-			change_scene(self)
+			change_scene(self, "fade", "iris")
 		end,
 		init = function(self)
 			menuitem(1, "restart level", function()
@@ -1114,7 +1214,7 @@ function make_game_scene(level)
 			local level_height = screen_height * 4
 
 			self.player = make_player(self)
-			self.level_x_offset = level * level_width
+			self.level_x_offset = self.level * level_width
 			for x = self.level_x_offset, (self.level_x_offset + level_width), tile_size do
 				for y = 0, level_height, tile_size do
 					local map_x = x / tile_size
@@ -1125,7 +1225,7 @@ function make_game_scene(level)
 						self:add(block)
 						add(self.blocks, block)
 					elseif (tile_id == 14) then
-						local door = make_door(x - self.level_x_offset, y, level, self.player)
+						local door = make_door(x - self.level_x_offset, y, self)
 						self:add(door)
 					elseif (tile_id == 49) then
 						self.player.x = x + 2 - self.level_x_offset
@@ -1233,7 +1333,7 @@ make_start_prompt = function(y,text,scene)
 				if (scene) then
 					change_scene(scene)
 				else
-					change_scene(make_game_scene(0))
+					change_scene(make_game_scene(0), "fade", "iris")
 				end
 			end
 		end,
@@ -1308,7 +1408,7 @@ local you_won = {
 	end,
 	draw = function(self)
 		palt(1, true)
-		spr(71, screen_width / 2 - 4, self.y)
+		spr(48, screen_width / 2 - 4, self.y)
 		palt(1, false)
 		print(self.text, self.x, self.y + 15, 7)
 	end
@@ -1328,7 +1428,7 @@ winning_scene = make_scene({
 })
 
 current_scene = title_scene
--- current_scene = make_game_scene(3)
+-- current_scene = make_game_scene(0)
 -- current_scene = winning_scene
 
 function _init()
