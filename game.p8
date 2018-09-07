@@ -998,10 +998,10 @@ local next_level_map = {
 
 function make_door(x,y,scene)
 	return {
-		x = x,
-		y = y,
-		width = 16,
-		height = 16,
+		x = x + 4,
+		y = y + 5,
+		width = 16 - 8,
+		height = 16 - 5,
 		update = function(self)
 			if (not self.triggered and test_collision(self, scene.player)) then
 				self.triggered = true
