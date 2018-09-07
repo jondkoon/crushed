@@ -261,7 +261,7 @@ function make_scene(options)
 			local center = cam:position_on_screen(get_center(target))
 			self.iris_r = iris_get_max_r(center.x, center.y)
 			self.iris_target = target
-			self.iris_dr = -5
+			self.iris_dr = -4
 			self.iris_callback = callback
 			self.iris_active = true
 		end,
@@ -270,7 +270,7 @@ function make_scene(options)
 			self.max_iris_r = iris_get_max_r(center.x, center.y)		
 			self.iris_r = 4
 			self.iris_target = target
-			self.iris_dr = 5
+			self.iris_dr = 4
 			self.iris_callback = callback
 			self.iris_active = true
 		end,
